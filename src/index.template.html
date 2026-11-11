@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Поиск категорий продукции и показателей исследований для отдела гигиены питания">
+  <title>Справочник исследований — пробная версия отбора</title>
+  <style>@@STYLES@@</style>
+
+</head>
+<body>
+  <header class="masthead">
+    <div class="wrap masthead-inner">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3h6m-5 0v7l-5 8a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-8V3M8 15h8m-5 3h2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        Справочник исследований
+      </div>
+      <span class="version">Рабочая библиотека</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="intro" aria-labelledby="app-title">
+      <div class="kicker">РАБОЧИЕ МАТЕРИАЛЫ</div>
+      <h1 id="app-title">Что исследуем?</h1>
+      <p>Найдите продукцию по названию, коду или показателю.</p>
+    </section>
+
+    <section class="search-panel" aria-labelledby="search-label" hidden>
+      <label id="search-label" for="search">Код, продукт или показатель</label>
+      <div class="search-field">
+        <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4.5 4.5" stroke-linecap="round"/></svg>
+        <input id="search" type="search" placeholder="Например, салат, молоко или 9.16" autocomplete="off" spellcheck="false" aria-describedby="search-hint">
+        <button type="button" id="clear" class="clear" aria-label="Очистить поиск" hidden>×</button>
+      </div>
+      <div class="examples" id="search-hint" hidden>
+        <span>Примеры</span>
+        <button type="button" data-query="9.16.1.1">9.16.1.1</button>
+        <button type="button" data-query="салат">салат</button>
+        <button type="button" data-query="винегрет">винегрет</button>
+      </div>
+      <nav class="section-picks" aria-label="Быстрый переход к разделу"><button type="button" data-section="9">Готовые блюда</button><button type="button" data-section="2">Молочная продукция</button><button type="button" data-section="all">Все разделы</button></nav>
+    </section>
+
+    <aside class="notice" id="demo-notice" hidden>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8v.5" stroke-linecap="round"/></svg>
+      <div><strong>Демонстрационные данные</strong><span>Коды, категории и показатели в демо-записях условны. Для рабочих заключений нужны сверенные данные.</span></div>
+    </aside>
+
+    <div class="workspace">
+      <section class="results" aria-labelledby="result-heading">
+        <div class="section-heading">
+          <h2 id="result-heading">Каталог продукции</h2>
+          <span id="result-count" class="count" aria-live="polite">@@COUNT@@</span>
+        </div>
+        <div id="results-list"></div>
+        <div id="catalog-fallback"><p class="fallback-hint">Здесь можно раскрывать разделы и карточки. Для поиска по коду, продукту или показателю откройте веб-версию в Safari. Документы по отбору проб сверяйте с областью аккредитации.</p><p class="fallback-search"><a href="https://research-directory-food-hygiene.cuddlyheath4.chatgpt.site/">Открыть поиск в веб-версии</a></p>@@FALLBACK@@</div>
+      </section>
+
+      <section id="detail" class="detail" aria-label="Карточка категории" hidden></section>
+    </div>
+  </main>
+
+  <template id="result-template">
+    <button class="result" type="button">
+      <span class="result-meta"><span class="code"></span><span class="exact" hidden>Точный код</span><span class="demo-tag" hidden>Демо</span></span>
+      <strong class="result-title"></strong>
+      <span class="result-conditions"></span>
+      <span class="synonym" hidden></span>
+      <svg class="result-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </template>
+
+  <template id="detail-template">
+    <div class="detail-inner">
+      <button class="back" type="button">← К каталогу</button>
+      <div class="kicker">КАРТОЧКА КАТЕГОРИИ</div>
+      <div class="detail-meta"><span class="code"></span><span class="demo-tag" hidden>Демонстрационная запись</span></div>
+      <h2 tabindex="-1"></h2>
+      <details class="detail-notes">
+        <summary>Условия применения</summary>
+        <dl class="facts">
+          <div><dt>Условия применения</dt><dd class="conditions"></dd></div>
+        </dl>
+      </details>
+
+      <section class="sampling-plan" aria-labelledby="sampling-plan-title" hidden>
+        <h3 id="sampling-plan-title">Отбор проб · пробная версия</h3>
+        <p>Количество для передачи в лабораторию</p>
+        <table>
+          <thead><tr><th scope="col">Исследования</th><th scope="col">Сколько отобрать</th></tr></thead>
+          <tbody class="sampling-plan-rows"></tbody>
+        </table>
+      </section>
+      <div class="section-heading indicators-heading">
+        <h3>Показатели</h3>
+        <span class="count"></span>
+      </div>
+      <p class="conditions">Подбор документов по отбору проб предварительный. Перед применением сверяйте документ, вид продукции и условия отбора с областью аккредитации.</p>
+      <div class="indicators"></div>
+    </div>
+  </template>
+
+  <template id="study-group-template">
+    <details class="study-group">
+      <summary>
+        <span class="study-summary">
+          <span class="study-heading"><span class="study-label"></span><span class="count"></span></span>
+          <span class="study-reference"><b>Основание</b><span class="study-basis"></span></span>
+          <span class="study-reference"><b>Отбор проб</b><span class="study-sampling"></span></span>
+        </span>
+      </summary>
+      <div class="study-mappings"></div>
+      <div class="study-rows"></div>
+    </details>
+  </template>
+
+  <template id="indicator-template">
+    <article class="indicator">
+      <h4></h4>
+      <p class="limit"></p>
+      <div class="price-code" hidden></div>
+      <button class="copy" type="button" title="Копировать показатель">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+        <span class="sr-only">Копировать</span>
+      </button>
+      <div class="copy-fallback" hidden><label>Текст для ручного копирования<textarea readonly rows="5"></textarea></label></div>
+    </article>
+  </template>
+
+  <template id="placeholder-template">
+    <div class="placeholder">
+      <span class="placeholder-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3h8l4 4v14H6zM14 3v5h4M9 12h6m-6 4h6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <h2>Выберите категорию</h2>
+      <p>Здесь появятся условия применения, показатели и документы по отбору проб.</p>
+    </div>
+  </template>
+  <div id="copy-status" class="sr-only" role="status"></div>
+<script>@@CATALOG@@</script>
+<script>@@LABELS@@
+@@APP@@</script>
+</body>
+</html>
