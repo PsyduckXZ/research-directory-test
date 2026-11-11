@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Справочник исследований — проверка обновлений</title>
+  <style>
+    body { margin: 0; background: #f4f7fa; color: #172539; font: 17px/1.55 system-ui, sans-serif; }
+    main { max-width: 38rem; margin: 2rem auto; padding: 0 1.25rem; }
+    h1 { font-size: clamp(1.6rem, 5vw, 2.25rem); line-height: 1.2; }
+    button, a { font: inherit; }
+    button { background: #183c68; color: white; border: 0; border-radius: .5rem; padding: .55rem .8rem; }
+    a { color: #183c68; }
+    :focus-visible { outline: 3px solid #226ea4; outline-offset: 3px; }
+    #status { background: white; border: 1px solid #d9e1ea; border-radius: .5rem; padding: .75rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Проверка обновлений справочника</h1>
+    <p id="mode"></p>
+    <p id="status" role="status">Проверяем связь с сервером…</p>
+    <button type="button" id="retry">Проверить ещё раз</button>
+    <p id="download" hidden><a href="./index.html" download="research-directory-update-test.html">Скачать тестовый HTML</a></p>
+    <p id="local-help" hidden>Если ты скачал этот файл, открой его в браузере из папки «Загрузки». Для проверки версии нужен интернет.</p>
+    <noscript><p>Для проверки версии открой эту страницу в браузере с JavaScript.</p></noscript>
+  </main>
+  <script>
+    "use strict";
+    const local = location.protocol === "file:";
+    const versionUrl = local
+      ? "https://psyduckxz.github.io/research-directory-test/version.json"
+      : "./version.json";
+    const statusLine = document.querySelector("#status");
+    const retry = document.querySelector("#retry");
+
+    document.querySelector("#mode").textContent = local ? "Режим: скачанный файл." : "Режим: веб-страница.";
+    document.querySelector("#download").hidden = local;
+    document.querySelector("#local-help").hidden = !local;
+
+    async function checkVersion() {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      retry.disabled = true;
+      statusLine.textContent = "Проверяем связь с сервером…";
+      try {
+        const response = await fetch(versionUrl, {
+          credentials: "omit", cache: "no-store", signal: controller.signal
+        });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const data = await response.json();
+        if (data.kind !== "delivery-test" || typeof data.version !== "string") {
+          throw new Error("Ответ сервера не похож на файл тестовой версии");
+        }
+        statusLine.textContent = "Версия получена: " + data.version + ".";
+      } catch (error) {
+        const detail = error.name === "AbortError" ? "Сервер не ответил вовремя" : error.message;
+        statusLine.textContent = "Версию получить не удалось. " + detail + ".";
+      } finally {
+        clearTimeout(timeout);
+        retry.disabled = false;
+      }
+    }
+
+    retry.addEventListener("click", checkVersion);
+    checkVersion();
+  </script>
+</body>
+</html>
