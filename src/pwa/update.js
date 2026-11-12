@@ -26,13 +26,10 @@ async function setupPwaUpdates(status) {
     const registration = await serviceWorker.register("./sw.js", { updateViaCache: "none" });
     if (serviceWorker.controller) status.textContent = "Справочник готов к работе без интернета.";
 
-    const panel = feedback.closest("details");
-
     function showWaiting() {
       if (!serviceWorker.controller || !registration.waiting) return false;
       feedback.textContent = "Обновление загружено. Можно применить его и без интернета.";
       apply.hidden = false;
-      panel.open = true;
       check.disabled = false;
       return true;
     }

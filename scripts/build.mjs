@@ -74,14 +74,12 @@ assert.equal(new Set(identities).size, categories.length, "Повторяетс�
 const labelScript = "const groupTitles = " + stringify(labels.groupTitles) + ";\nconst studyLabels = " + stringify(labels.studyLabels) + ";";
 const catalogFiles = entries.map(name => "data/" + name);
 const offlineStatus = pwa ? '<p id="offline-status" class="offline-status" role="status">Готовим каталог для работы без интернета…</p>' : "";
-const updateControls = version ? `<details class="update-panel">
-      <summary>Обновления справочника</summary>
+const updateControls = version ? `<div class="update-panel">
       <p id="update-status" role="status"></p>
-      <button type="button" id="check-update"${pwa ? " hidden" : ""}>Проверить обновления</button>
       ${pwa
         ? '<button type="button" id="apply-update" hidden>Применить обновление</button>'
         : '<button type="button" id="download-update" hidden>Загрузить обновление</button><a id="save-update" hidden>Сохранить новый HTML</a>'}
-    </details>` : "";
+    </div>` : "";
 const pwaUpdateScript = pwa ? await read("src/pwa/update.js") : "";
 const windowsReleaseUrl = "https://psyduckxz.github.io/research-directory-test/windows/version.json";
 const parts = {
@@ -91,7 +89,9 @@ const parts = {
     '  <link rel="apple-touch-icon" href="icon-180.png">',
     '  <meta name="theme-color" content="#183c68">'
   ].join("\n") : "",
-  PWASTATUS: offlineStatus + updateControls,
+  PWASTATUS: offlineStatus,
+  UPDATEBUTTON: version ? `        <button type="button" id="check-update" class="update-button"${pwa ? " hidden" : ""}>Проверить обновления</button>` : "",
+  UPDATESTATUS: updateControls,
   VERSION: version ? "Версия " + version : "Рабочая библиотека",
   FALLBACK: pwa ? "" : renderFallback(categories, labels),
   SCRIPTS: pwa
