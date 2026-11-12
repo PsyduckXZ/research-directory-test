@@ -318,3 +318,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
   .placeholder { padding: 32px 12px; }
 }
 
+
+.offline-status {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+}
