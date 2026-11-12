@@ -1,0 +1,1209 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Поиск категорий продукции и показателей исследований для отдела гигиены питания">
+  <title>Справочник исследований — пробная версия отбора</title>
+  <style>
+:root {
+  color-scheme: light;
+  --ink: #182944;
+  --muted: #506077;
+  --line: #dbe3ee;
+  --paper: #fff;
+  --accent: #254f9e;
+  --blue-wash: #edf4ff;
+  --amber: #765016;
+  --amber-wash: #fff7e6;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; color: var(--ink); background: #f4f7fb; line-height: 1.5; }
+button, input, textarea { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px solid #497ed0; outline-offset: 3px; }
+svg { width: 22px; height: 22px; flex: none; }
+.wrap { width: min(1160px, calc(100% - 64px)); margin-inline: auto; }
+.masthead { color: #fff; background: #172b50; }
+.masthead-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 70px; }
+.brand { display: flex; align-items: center; gap: 12px; font-weight: 650; letter-spacing: .01em; }
+.brand-icon, .placeholder-icon { display: grid; place-items: center; border-radius: 10px; width: 39px; height: 39px; flex: none; }
+.brand-icon { color: #dbeaff; background: #2a426e; }
+.version { color: #d7e5ff; white-space: nowrap; font-size: .75rem; padding: 4px 9px; border: 1px solid #546a91; border-radius: 6px; }
+main.wrap { padding-block: 40px 52px; }
+.kicker { color: var(--accent); font-size: .72rem; font-weight: 780; letter-spacing: .13em; }
+.intro h1 { margin: 6px 0 8px; font-size: clamp(2rem, 5.4vw, 3.15rem); line-height: 1.08; letter-spacing: -.04em; }
+.intro p { margin: 0; color: var(--muted); max-width: 670px; }
+.search-panel { margin-top: 25px; padding: 18px 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+.search-panel label { display: block; margin-bottom: 8px; font-size: .875rem; font-weight: 700; }
+.search-field { position: relative; }
+.search-icon { position: absolute; top: 15px; left: 14px; color: var(--accent); pointer-events: none; }
+input[type="search"] { width: 100%; min-width: 0; min-height: 52px; padding: 10px 50px 10px 46px; border: 1px solid #aabbd3; border-radius: 9px; color: var(--ink); background: #fbfdff; }
+input[type="search"]::placeholder { color: #596b84; }
+input::-webkit-search-cancel-button { display: none; }
+.clear { position: absolute; right: 4px; top: 4px; width: 44px; height: 44px; background: transparent; border: 0; border-radius: 7px; color: var(--accent); font-size: 1.5rem; }
+.clear:hover { background: var(--blue-wash); }
+.examples { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 10px; font-size: .79rem; color: var(--muted); }
+.examples button { padding: 4px 10px; min-height: 32px; color: var(--accent); background: var(--blue-wash); border: 1px solid transparent; border-radius: 6px; }
+.examples button:hover { border-color: #93afd7; }
+.notice { margin: 16px 0 25px; display: flex; align-items: flex-start; gap: 10px; padding: 11px 14px; border: 1px solid #ecd6a8; border-radius: 10px; color: var(--amber); background: var(--amber-wash); font-size: .875rem; }
+.notice strong { margin-right: 8px; }
+.workspace { display: grid; grid-template-columns: minmax(0, .68fr) minmax(0, 1.32fr); align-items: start; gap: 25px; margin-top: 25px; }
+.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.section-heading h2, .section-heading h3 { font-size: 1.1rem; margin: 0; }
+.count { flex: none; display: inline-flex; min-width: 25px; justify-content: center; border-radius: 6px; background: #e7eef9; color: #35527c; font-size: .78rem; font-weight: 700; padding: 2px 7px; }
+#results-list { display: grid; gap: 9px; }
+.catalog-tree, .catalog-children { display: grid; gap: 6px; min-width: 0; }
+.catalog-branch { min-width: 0; }
+.catalog-branch > summary {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  cursor: pointer;
+  font-size: .9rem;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.catalog-branch > summary:hover { border-color: #8aa6cf; }
+.catalog-branch > summary .code { margin-right: 5px; vertical-align: .08em; }
+.catalog-tree > .catalog-branch > summary { background: var(--blue-wash); font-size: 1rem; }
+.catalog-children { margin: 6px 0 0; padding-left: 9px; border-left: 1px solid var(--line); }
+.catalog-tree .result { min-height: 44px; padding-block: 8px; overflow-wrap: anywhere; }
+.catalog-tree .result-title { margin-top: 2px; font-size: .9rem; }
+.catalog-tree .result-conditions { display: none; }
+
+.result { position: relative; width: 100%; padding: 13px 37px 13px 14px; text-align: left; color: inherit; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; }
+.result:hover { border-color: #8aa6cf; }
+.result[aria-pressed="true"] { border-color: #6085bf; background: #edf4ff; box-shadow: inset 3px 0 #426eb1; }
+.result-meta, .detail-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.code, .demo-tag, .exact { display: inline-block; border-radius: 5px; padding: 2px 7px; font-size: .71rem; font-weight: 720; }
+.code { background: #dce8fc; color: #183e77; font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: .9rem; font-weight: 750; line-height: 1.35; }
+.demo-tag { color: var(--amber); background: #f9efd9; }
+.exact { color: #185a47; background: #e3f4ec; }
+.result-title, .result-conditions, .synonym { display: block; }
+.result-title { margin-top: 5px; font-size: 1rem; }
+.result-conditions, .synonym { color: var(--muted); font-size: .83rem; margin-top: 2px; }
+.synonym { color: var(--accent); }
+.result-arrow { width: 18px; height: 18px; position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #56749d; }
+.detail, .empty-results { border: 1px solid var(--line); border-radius: 13px; background: var(--paper); }
+.placeholder { padding: 46px 26px; text-align: center; }
+.placeholder-icon { margin: 0 auto 14px; color: var(--accent); background: var(--blue-wash); width: 50px; height: 50px; }
+.placeholder h2 { font-size: 1.15rem; margin: 0 0 6px; }
+.placeholder p { color: var(--muted); max-width: 310px; margin: 0 auto; font-size: .875rem; }
+.empty-results { padding: 17px; }
+.empty-results p { margin: 4px 0 0; color: var(--muted); font-size: .875rem; }
+.detail-inner { container-type: inline-size; padding: 16px; }
+.back { display: none; }
+.detail-meta { margin-top: 9px; }
+.detail h2 { margin: 6px 0 13px; line-height: 1.22; overflow-wrap: anywhere; }
+.facts { display: grid; gap: 10px; margin: 0; }
+.detail-notes { background: #f4f7fc; border-radius: 8px; padding: 7px 10px; }
+.detail-notes > summary { cursor: pointer; color: var(--accent); font-size: .84rem; font-weight: 700; }
+.facts { margin-top: 8px; }
+dt { color: var(--muted); font-weight: 700; font-size: .76rem; }
+dd { margin: 2px 0 0; font-size: .875rem; overflow-wrap: anywhere; white-space: pre-line; }
+dd.missing { color: var(--muted); }
+.indicators-heading { margin: 12px 0 6px; }
+.indicators { display: grid; gap: 6px; }
+.study-group { border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+.study-group > summary { cursor: pointer; padding: 8px 10px; background: #f4f7fc; border-radius: 7px; }
+.study-group[open] > summary { border-radius: 7px 7px 0 0; }
+.study-summary { display: inline-grid; vertical-align: top; width: calc(100% - 1.35em); gap: 6px 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.study-heading { grid-column: 1 / -1; color: var(--accent); font-size: .9rem; font-weight: 700; overflow-wrap: anywhere; }
+.study-heading .count { margin-left: 5px; }
+.study-reference { color: var(--ink); font-size: .76rem; line-height: 1.3; overflow-wrap: anywhere; }
+.study-reference b { display: block; color: var(--muted); font-size: .72rem; margin-bottom: 2px; }
+.study-reference span { display: block; }
+.study-reference span + span { margin-top: 3px; }
+.study-mapping { padding: 6px 10px; border-top: 1px solid var(--line); font-size: .8rem; overflow-wrap: anywhere; }
+.study-mapping summary { cursor: pointer; color: var(--accent); font-weight: 650; }
+.study-mapping dl { margin: 6px 0 0; }
+.study-mapping dl > div + div { margin-top: 5px; }
+.study-mapping dd { font-size: .8rem; }
+.indicator { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; padding: 6px 9px; align-items: center; }
+.indicator + .indicator, .study-rows { border-top: 1px solid var(--line); }
+.indicator:nth-child(even) { background: #f8faff; }
+.indicator h4 { margin: 0; line-height: 1.25; font-size: .88rem; overflow-wrap: anywhere; }
+.indicator .limit { margin: 0; grid-column: 1 / -1; grid-row: 2; font-size: .83rem; line-height: 1.3; overflow-wrap: anywhere; white-space: pre-line; }
+.indicator .copy { grid-column: 2; grid-row: 1; justify-content: center; width: 36px; }
+.indicator .copy-fallback { grid-column: 1 / -1; }
+@container (min-width: 480px) {
+  .study-summary { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.35fr) minmax(0, .9fr); }
+  .study-heading { grid-column: auto; }
+  .indicator { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) auto; }
+  .indicator .limit { grid-column: 2; grid-row: 1; }
+  .indicator .copy { grid-column: 3; }
+}
+.copy, .back { color: var(--accent); border: 1px solid #d3dfef; background: #f6f9fe; border-radius: 7px; padding: 5px 8px; min-height: 36px; font-size: .76rem; font-weight: 700; }
+.copy { display: flex; align-items: center; gap: 4px; }
+.copy svg { width: 15px; height: 15px; }
+.copy:hover, .back:hover { background: var(--blue-wash); }
+.copy-fallback { margin-top: 10px; color: var(--muted); font-size: .8rem; }
+.copy-fallback textarea { display: block; width: 100%; padding: 7px; margin-top: 4px; font-size: 1rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+@media (max-width: 740px) {
+  .wrap { width: calc(100% - 32px); }
+  .masthead-inner { min-height: 58px; }
+  .brand { gap: 8px; font-size: .86rem; }
+  .brand-icon { width: 32px; height: 32px; }
+  main.wrap { padding-block: 25px 35px; }
+  .intro p { font-size: .9rem; }
+  .search-panel { margin-top: 18px; padding: 13px; }
+  .examples button { min-height: 36px; }
+  .notice { margin-bottom: 18px; }
+  .notice strong { display: block; }
+  .workspace { grid-template-columns: 1fr; gap: 0; margin-top: 18px; }
+  .detail { display: none; }
+  .workspace.show-detail .detail { display: block; }
+  .workspace.show-detail .results { display: none; }
+  .detail-inner { padding: 15px; }
+  .back { display: inline-block; margin-bottom: 13px; min-height: 44px; }
+  .indicator .copy { min-height: 44px; width: 44px; }
+}
+
+.workspace:has(#catalog-fallback) { grid-template-columns: minmax(0, 1fr); }
+.fallback-hint, .fallback-card p { color: var(--muted); font-size: .86rem; }
+.fallback-card { background: var(--paper); padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.fallback-study { margin: 6px 0; padding: 8px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.fallback-study > summary { cursor: pointer; color: var(--accent); font-weight: 700; }
+.fallback-reference + .fallback-reference { border-top: 1px solid var(--line); }
+.fallback-reference ul { margin: 8px 0; padding-left: 20px; }
+.fallback-reference li + li { margin-top: 7px; }
+.matched-indicator { outline: 2px solid #9ab3de; outline-offset: -2px; background: #edf4ff; }
+.fallback-search a { display: inline-block; padding: 11px 14px; border-radius: 8px; background: var(--blue-wash); color: var(--accent); font-weight: 700; }
+
+.sampling-plan { margin: 16px 0; padding: 12px; border: 1px solid #c8dfd6; border-radius: 12px; background: #f0f8f4; color: #183b33; }
+.sampling-plan h3 { margin: 0 0 8px; }
+.sampling-plan table { width: 100%; table-layout: fixed; border-collapse: collapse; text-align: left; }
+.sampling-plan th, .sampling-plan td { padding: 8px 4px; border-bottom: 1px solid #c8dfd6; vertical-align: top; overflow-wrap: anywhere; }
+.sampling-plan thead th:last-child { width: 43%; }
+.sampling-plan tbody tr:last-child > * { border-bottom: 0; }
+.sampling-plan tbody th { font-weight: 600; }
+.sampling-plan td { font-weight: 700; }
+.sampling-plan details { font-weight: 400; }
+.sampling-amount span { display: block; }
+.sampling-amount span + span { margin-top: 4px; }
+.sampling-plan p { margin: 4px 0; }
+.sampling-plan summary { cursor: pointer; padding: 8px 0; font-weight: 650; }
+.sampling-options { display: grid; gap: 3px; }
+.sampling-options label { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; cursor: pointer; }
+.sampling-options input { flex: none; margin: 3px 0 0; width: 18px; height: 18px; }
+.sampling-references ul { margin: 4px 0; padding-left: 22px; }
+
+.indicator .price-code { grid-column: 1 / -1; font-size: .8rem; line-height: 1.4; color: var(--accent); }
+.price-code span { display: block; }
+.price-code .price-heading { color: var(--muted); font-size: .72rem; }
+@container (min-width: 650px) {
+  .indicator.has-price { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(145px, .7fr) auto; }
+  .indicator.has-price .price-code { grid-column: 3; grid-row: 1; }
+  .indicator.has-price .copy { grid-column: 4; }
+}
+.study-preparation { margin: 0; padding: 8px 10px; border-top: 1px solid var(--line); font-size: .8rem; color: var(--accent); }
+
+
+/* Desktop: working library. Mobile: search first. */
+:root {
+  --ink: #25313b;
+  --muted: #66747f;
+  --line: #e1e7e9;
+  --accent: #286368;
+  --blue-wash: #edf4f3;
+  --paper: #fff;
+}
+body { background: #fff; }
+.wrap { width: min(1440px, calc(100% - 64px)); }
+.masthead { background: #fff; color: var(--ink); border-bottom: 1px solid var(--line); }
+.masthead-inner { min-height: 76px; }
+.brand { font-size: .95rem; font-weight: 600; letter-spacing: -.015em; }
+.brand-icon { background: var(--blue-wash); color: var(--accent); border-radius: 9px; width: 34px; height: 34px; }
+.version { color: var(--muted); border: 0; padding: 0; font-size: .75rem; }
+.intro .kicker { display: none; }
+.intro h1 { font-size: 1.85rem; font-weight: 500; letter-spacing: -.035em; line-height: 1.2; margin: 0 0 10px; }
+.intro p { font-size: .88rem; max-width: 680px; }
+.search-panel { padding: 0; border: 0; border-radius: 0; background: transparent; margin-top: 0; }
+.search-panel label { font-size: .8rem; font-weight: 500; color: var(--muted); margin-bottom: 9px; }
+input[type="search"] { border-color: var(--line); background: #f5f7f7; min-height: 54px; border-radius: 10px; }
+input[type="search"]::placeholder { color: #73818a; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); }
+.clear { color: var(--muted); }
+.section-heading h2 { font-size: .82rem; font-weight: 500; color: var(--muted); }
+.count { background: #edf1f2; color: #617078; border-radius: 5px; font-weight: 500; }
+.catalog-tree, .catalog-children { gap: 4px; }
+.catalog-branch > summary { border: 0; border-radius: 7px; background: transparent; padding: 11px 9px; font-weight: 500; font-size: .87rem; }
+.catalog-tree > .catalog-branch > summary { background: transparent; font-size: .88rem; }
+.catalog-branch > summary:hover, .catalog-branch[open] > summary { background: #e9eeee; }
+.catalog-children { padding-left: 10px; }
+.code { font-size: .75rem; font-weight: 500; color: #697b80; background: #eef2f3; padding: 2px 5px; }
+.catalog-branch > summary .code { background: transparent; padding-left: 0; }
+.result { border: 0; border-radius: 7px; padding: 12px 30px 12px 10px; background: transparent; }
+.result:hover { background: #edf1f1; }
+.result[aria-pressed="true"] { border: 0; background: #e6eeed; box-shadow: inset 2px 0 var(--accent); }
+.result-title { font-size: .9rem; font-weight: 500; }
+.result-conditions, .synonym { font-size: .77rem; }
+.result-arrow { color: #8b9a9f; width: 16px; height: 16px; }
+.detail { border: 0; border-radius: 0; }
+.detail-inner { padding: 0; }
+.detail .kicker { color: var(--muted); font-size: .65rem; font-weight: 500; letter-spacing: .08em; }
+.detail h2 { font-size: 1.55rem; font-weight: 500; letter-spacing: -.025em; margin-bottom: 20px; }
+.detail-notes { padding: 12px 14px; background: #f5f7f7; border-radius: 8px; }
+.detail-notes > summary { font-weight: 500; color: var(--muted); }
+.indicators-heading { font-size: .9rem; font-weight: 500; margin: 26px 0 12px; }
+.indicators { gap: 12px; }
+.study-group { border-color: var(--line); border-radius: 9px; }
+.study-group > summary { background: #f6f8f8; padding: 15px 13px; }
+.study-heading { color: var(--ink); font-weight: 500; }
+.study-reference b { font-weight: 500; }
+.study-reference { font-size: .77rem; }
+.indicator { padding: 12px; gap: 7px 12px; }
+.indicator h4 { font-weight: 500; }
+.indicator:nth-child(even) { background: #fafbfb; }
+.copy, .back { border-color: var(--line); background: #fff; color: var(--accent); font-weight: 500; }
+.study-preparation { padding: 12px; background: #f8faf9; }
+.sampling-plan { border-color: #dce7e2; background: #f6f9f7; border-radius: 9px; padding: 16px; }
+.sampling-plan h3 { font-size: 1rem; font-weight: 500; }
+.sampling-plan th, .sampling-plan td { border-color: #e1e9e5; }
+.placeholder { padding: 64px 20px; }
+.placeholder-icon { color: #7e9698; background: #f0f5f4; }
+.placeholder h2 { font-size: 1.15rem; margin: 0 0 8px; }
+.notice { font-size: .8rem; }
+.section-picks { display: none; }
+@media (min-width: 901px) {
+  main.wrap { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px 42px; padding: 0 0 60px; align-items: start; }
+  .intro { grid-column: 2; grid-row: 1; padding-top: 38px; }
+  .search-panel { grid-column: 2; grid-row: 2; }
+  .workspace { display: contents; }
+  .results { grid-column: 1; grid-row: 1 / span 4; padding: 30px 18px 30px 0; border-right: 1px solid var(--line); min-height: calc(100dvh - 76px); }
+  .section-heading { padding: 0 9px; margin-bottom: 18px; }
+  .detail { grid-column: 2; grid-row: 3; min-width: 0; }
+  .notice { grid-column: 2; grid-row: 4; }
+  main:has(#catalog-fallback) { display: block; padding-top: 30px; }
+  main:has(#catalog-fallback) .workspace { display: block; }
+  main:has(#catalog-fallback) .results { border-right: 0; }
+}
+@media (max-width: 900px) {
+  .wrap { width: min(700px, calc(100% - 36px)); }
+  .masthead-inner { min-height: 64px; }
+  .brand { font-size: .87rem; }
+  .version { font-size: .7rem; }
+  main.wrap { padding: 34px 0 44px; }
+  .intro { text-align: center; padding: 8px 6px 0; }
+  .intro h1 { font-size: clamp(1.65rem, 5.8vw, 2rem); }
+  .intro p { font-size: .85rem; margin: 0 auto; max-width: 420px; }
+  .search-panel { margin-top: 26px; padding: 0; }
+  .search-panel label { font-size: .78rem; }
+  input[type="search"] { font-size: 16px; padding-right: 48px; min-height: 56px; }
+  .clear { top: 6px; }
+  .search-icon { top: 17px; }
+  .section-picks { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .section-picks button { min-height: 44px; font-size: .78rem; padding: 9px 12px; border: 1px solid var(--line); border-radius: 22px; background: #fff; color: var(--muted); }
+  .section-picks button:hover { background: var(--blue-wash); color: var(--accent); }
+  .workspace { display: grid; grid-template-columns: minmax(0, 1fr); margin-top: 30px; gap: 0; }
+  .results { min-width: 0; }
+  .section-heading { margin-bottom: 14px; padding-inline: 0; }
+  .catalog-tree > .catalog-branch > summary { padding: 17px 10px; border-bottom: 1px solid var(--line); border-radius: 0; font-size: .95rem; }
+  .catalog-tree > .catalog-branch[open] > summary { border-radius: 8px; }
+  .catalog-branch > summary { min-height: 48px; }
+  .catalog-tree .result { min-height: 48px; }
+  .detail { display: none; }
+  .workspace.show-detail .detail { display: block; }
+  .workspace.show-detail .results { display: none; }
+  .detail-inner { padding: 0; }
+  .back { display: inline-block; min-height: 44px; padding: 9px 13px; margin-bottom: 22px; }
+  .detail h2 { font-size: 1.4rem; }
+  .indicator .copy { width: 44px; min-height: 44px; }
+  body.has-selection .intro, body.has-selection .section-picks { display: none; }
+  body.has-selection main.wrap { padding-top: 18px; }
+  body.has-selection .search-panel { margin-top: 0; }
+  .study-summary { grid-template-columns: minmax(0, 1fr); }
+  .study-heading { grid-column: 1; }
+  .placeholder { padding: 32px 12px; }
+}
+
+
+.offline-status {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+}
+</style>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <meta name="theme-color" content="#183c68">
+</head>
+<body>
+  <header class="masthead">
+    <div class="wrap masthead-inner">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 3h6m-5 0v7l-5 8a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-8V3M8 15h8m-5 3h2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        Справочник исследований
+      </div>
+      <span class="version">Рабочая библиотека</span>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <p id="offline-status" class="offline-status" role="status">Готовим каталог для работы без интернета…</p>
+    <section class="intro" aria-labelledby="app-title">
+      <div class="kicker">РАБОЧИЕ МАТЕРИАЛЫ</div>
+      <h1 id="app-title">Что исследуем?</h1>
+      <p>Найдите продукцию по названию, коду или показателю.</p>
+    </section>
+
+    <section class="search-panel" aria-labelledby="search-label" hidden>
+      <label id="search-label" for="search">Код, продукт или показатель</label>
+      <div class="search-field">
+        <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4.5 4.5" stroke-linecap="round"/></svg>
+        <input id="search" type="search" placeholder="Например, салат, молоко или 9.16" autocomplete="off" spellcheck="false" aria-describedby="search-hint">
+        <button type="button" id="clear" class="clear" aria-label="Очистить поиск" hidden>×</button>
+      </div>
+      <div class="examples" id="search-hint" hidden>
+        <span>Примеры</span>
+        <button type="button" data-query="9.16.1.1">9.16.1.1</button>
+        <button type="button" data-query="салат">салат</button>
+        <button type="button" data-query="винегрет">винегрет</button>
+      </div>
+      <nav class="section-picks" aria-label="Быстрый переход к разделу"><button type="button" data-section="9">Готовые блюда</button><button type="button" data-section="2">Молочная продукция</button><button type="button" data-section="all">Все разделы</button></nav>
+    </section>
+
+    <aside class="notice" id="demo-notice" hidden>
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8v.5" stroke-linecap="round"/></svg>
+      <div><strong>Демонстрационные данные</strong><span>Коды, категории и показатели в демо-записях условны. Для рабочих заключений нужны сверенные данные.</span></div>
+    </aside>
+
+    <div class="workspace">
+      <section class="results" aria-labelledby="result-heading">
+        <div class="section-heading">
+          <h2 id="result-heading">Каталог продукции</h2>
+          <span id="result-count" class="count" aria-live="polite">515</span>
+        </div>
+        <div id="results-list"></div>
+        <div id="catalog-fallback"></div>
+      </section>
+
+      <section id="detail" class="detail" aria-label="Карточка категории" hidden></section>
+    </div>
+  </main>
+
+  <template id="result-template">
+    <button class="result" type="button">
+      <span class="result-meta"><span class="code"></span><span class="exact" hidden>Точный код</span><span class="demo-tag" hidden>Демо</span></span>
+      <strong class="result-title"></strong>
+      <span class="result-conditions"></span>
+      <span class="synonym" hidden></span>
+      <svg class="result-arrow" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m9 6 6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </template>
+
+  <template id="detail-template">
+    <div class="detail-inner">
+      <button class="back" type="button">← К каталогу</button>
+      <div class="kicker">КАРТОЧКА КАТЕГОРИИ</div>
+      <div class="detail-meta"><span class="code"></span><span class="demo-tag" hidden>Демонстрационная запись</span></div>
+      <h2 tabindex="-1"></h2>
+      <details class="detail-notes">
+        <summary>Условия применения</summary>
+        <dl class="facts">
+          <div><dt>Условия применения</dt><dd class="conditions"></dd></div>
+        </dl>
+      </details>
+
+      <section class="sampling-plan" aria-labelledby="sampling-plan-title" hidden>
+        <h3 id="sampling-plan-title">Отбор проб · пробная версия</h3>
+        <p>Количество для передачи в лабораторию</p>
+        <table>
+          <thead><tr><th scope="col">Исследования</th><th scope="col">Сколько отобрать</th></tr></thead>
+          <tbody class="sampling-plan-rows"></tbody>
+        </table>
+      </section>
+      <div class="section-heading indicators-heading">
+        <h3>Показатели</h3>
+        <span class="count"></span>
+      </div>
+      <p class="conditions">Подбор документов по отбору проб предварительный. Перед применением сверяйте документ, вид продукции и условия отбора с областью аккредитации.</p>
+      <div class="indicators"></div>
+    </div>
+  </template>
+
+  <template id="study-group-template">
+    <details class="study-group">
+      <summary>
+        <span class="study-summary">
+          <span class="study-heading"><span class="study-label"></span><span class="count"></span></span>
+          <span class="study-reference"><b>Основание</b><span class="study-basis"></span></span>
+          <span class="study-reference"><b>Отбор проб</b><span class="study-sampling"></span></span>
+        </span>
+      </summary>
+      <div class="study-mappings"></div>
+      <div class="study-rows"></div>
+    </details>
+  </template>
+
+  <template id="indicator-template">
+    <article class="indicator">
+      <h4></h4>
+      <p class="limit"></p>
+      <div class="price-code" hidden></div>
+      <button class="copy" type="button" title="Копировать показатель">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>
+        <span class="sr-only">Копировать</span>
+      </button>
+      <div class="copy-fallback" hidden><label>Текст для ручного копирования<textarea readonly rows="5"></textarea></label></div>
+    </article>
+  </template>
+
+  <template id="placeholder-template">
+    <div class="placeholder">
+      <span class="placeholder-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 3h8l4 4v14H6zM14 3v5h4M9 12h6m-6 4h6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+      <h2>Выберите категорию</h2>
+      <p>Здесь появятся условия применения, показатели и документы по отбору проб.</p>
+    </div>
+  </template>
+  <div id="copy-status" class="sr-only" role="status"></div>
+<script>"use strict";
+
+async function startDirectoryPwa(catalogFiles, renderDirectory) {
+  const status = document.querySelector("#offline-status");
+  try {
+    const sections = await Promise.all(catalogFiles.map(async path => {
+      const response = await fetch(path);
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${path}`);
+      return response.json();
+    }));
+    window.RESEARCH_CATEGORIES = sections.flat();
+    renderDirectory();
+  } catch (error) {
+    status.textContent = "Каталог не загрузился. Откройте страницу с интернетом и обновите её.";
+    console.error(error);
+    return;
+  }
+
+  if (!("serviceWorker" in navigator)) {
+    status.textContent = "Офлайн-доступ недоступен в этом браузере.";
+    return;
+  }
+
+  const showReady = () => {
+    status.textContent = "Справочник готов к работе без интернета.";
+  };
+
+  try {
+    const registration = await navigator.serviceWorker.register("./sw.js");
+    if (navigator.serviceWorker.controller) {
+      showReady();
+      return;
+    }
+    navigator.serviceWorker.addEventListener("controllerchange", showReady, { once: true });
+    const worker = registration.installing ?? registration.waiting;
+    const checkInstall = () => {
+      if (worker?.state === "redundant" && !navigator.serviceWorker.controller) {
+        status.textContent = "Не удалось сохранить каталог. Проверьте интернет и обновите страницу.";
+      }
+    };
+    worker?.addEventListener("statechange", checkInstall);
+    checkInstall();
+  } catch (error) {
+    status.textContent = "Не удалось настроить офлайн-доступ. Обновите страницу.";
+    console.error(error);
+  }
+}
+
+startDirectoryPwa(["data/01.json","data/02.json","data/03.json","data/04.json","data/05.json","data/06.json","data/07.json","data/08.json","data/09.json","data/water.json"], () => {
+const groupTitles = {"1":"Мясо и мясопродукты, птица, яйца","2":"Молоко и молочные продукты","3":"Рыба, нерыбные объекты промысла и продукты, вырабатываемые из них","4":"Зерно (семена), мукомольно-крупяные и хлебобулочные изделия","5":"Сахар, кондитерские изделия, какао-продукты, мед и прополис","6":"Плодоовощная продукция","7":"Масличное сырьё и жировые продукты","8":"Напитки","9":"Другие продукты","1.1":"Мясо и мясные полуфабрикаты","1.1.1":"Мясо убойных животных","1.1.2":"Замороженное мясо","1.1.3":"Бескостные полуфабрикаты","1.1.4":"Рубленые полуфабрикаты","1.2":"Субпродукты","1.2.1":"Субпродукты охлаждённые и замороженные","1.4":"Колбасы и продукты из мяса","1.4.1":"Сырокопчёные и сыровяленые изделия","1.4.4":"Варёные колбасные изделия","1.4.8":"Копчёно-варёные мясные продукты","1.4.9":"Копчёно-запечённые и запечённые продукты","1.4.10":"Варёные и запечённые продукты со сроком годности свыше 5 суток","1.9":"Мясо птицы и полуфабрикаты","1.9.1":"Тушки и мясо птицы","1.9.2":"Натуральные полуфабрикаты из птицы","1.9.3":"Рубленые полуфабрикаты из птицы","1.11":"Колбасы и продукты из птицы","1.11.2":"Сыровяленые и сырокопчёные изделия в нарезке","1.11.3":"Полукопчёные изделия и изделия в нарезке","1.11.6":"Запечённые и копчёные тушки и их части","1.15":"Яйца и жидкие яичные продукты","1.16":"Сухие яичные продукты","1.16.3":"Яичные продукты сублимационной сушки","2.2":"Питьевое молоко, сливки, пахта, сыворотка, молочные напитки, жидкие кисломолочные продукты и сметана","2.2.12":"Жидкие кисломолочные продукты и продукты на их основе","2.2.13":"Кисломолочные продукты с бифидобактериями и другими пробиотиками","2.2.14":"Сметана и продукты на её основе","2.2.15":"Термически обработанные сквашенные молочные и молочные составные продукты","2.3":"Творог, творожные продукты, молочный альбумин и пастообразные молочные белковые продукты","2.3.1":"Творог без компонентов, кроме зернёного и произведённого с ультрафильтрацией или сепарированием","2.3.2":"Творог с ультрафильтрацией или сепарированием, зернёный творог","2.3.3":"Творог с компонентами, творожная масса и творожные сырки","2.3.4":"Творожные продукты","2.4":"Концентрированные и сгущённые молочные продукты, молочные консервы","2.6":"Концентраты молочных белков, казеин, казеинаты и гидролизаты","2.7":"Сыры, сырные продукты, пасты и соусы","2.7.2":"Сыры и сырные продукты плавленые","2.7.7":"Творожный сыр","2.8":"Масло, паста масляная из коровьего молока, молочный жир","2.8.1":"Масло сливочное из коровьего молока","2.8.6":"Паста масляная","3.1":"Рыба живая, рыба-сырец, охлажденная, мороженая, фарш, филе, мясо морских млекопитающих","3.1.1":"Рыба-сырец и рыба живая","3.1.1.2":"Морская рыба-сырец и морская рыба живая","3.1.2":"Рыба охлажденная, мороженая","3.1.2.1":"Рыба пресноводная охлажденная, мороженая","3.1.2.2":"Рыба охлажденная, мороженая морская","3.1.3":"Охлажденная и мороженая рыбная продукция","3.1.3.1":"Охлажденная и мороженая рыбная продукция: филе рыбное, рыба спецразделки","3.1.3.1.1":"Филе рыбное, рыба спецразделки","3.1.3.1.2":"Филе рыбное, рыба спецразделки морские","3.1.3.1.3":"Упакованные под вакуумом филе рыбное, рыба спецразделки","3.1.3.1.4":"Упакованные под вакуумом филе рыбное, рыба спецразделки морские","3.1.3.2":"Охлажденная и мороженая рыбная продукция: фарш рыбный пищевой, формованные фаршевые изделия, в том числе с мучным компонентом","3.1.3.3":"Охлажденная и мороженая рыбная продукция: фарш особой кондиции","3.4":"Икра и молоки рыб и продукты из них; аналоги икры","3.4.4":"Икра осетровых рыб","3.4.5":"Икра лососевых рыб зернистая соленая","4.1":"Зерно, семена зернобобовых ТР ТС 015/2011","4.1.1":"Зерно продовольственное, в т. ч. пшеница, рожь, тритикале, овес, ячмень, просо, гречиха, рис, кукуруза, сорго","4.1.1/grain":"Зерно продовольственное","4.1.1/other":"Прочее зерно продовольственное (рожь, тритикале, просо, гречиха, сорго)","4.2":"Мукомольно-крупяные и хлебобулочные изделия ТР ТС 021/2011","4.2.1":"Крупа, толокно, хлопья","4.2.1.1":"Крупы, не требующие варки (концентрат пищевой тепловой сушки)","4.2.1.2":"Палочки крупяные всех видов (концентрат пищевой экструзионной технологии)","4.2.1.3":"Крупа, толокно, хлопья","4.2.1.3.1":"Крупа, толокно, хлопья прочие","4.2.2":"Мука пшеничная, в т. ч. для макаронных изделий, ржаная, тритикалевая, кукурузная, ячменная, просяная (пшенная), рисовая, гречневая, сорговая","4.2.3":"Макаронные изделия","4.2.4":"Отруби пищевые (пшеничные, ржаные)","4.2.5":"Хлеб, булочные и сдобные изделия","5.2":"Сахаристые кондитерские изделия, восточные сладости, жевательная резинка","5.2.1":"Конфеты и сладости неглазированные","5.2.2":"Конфеты и сладости глазированные с корпусами","5.2.5":"Карамель неглазированная","5.2.6":"Карамель глазированная с начинками","5.2.10":"Халва","5.2.11":"Пастиломармеладные изделия","5.2.12":"Восточные сладости","5.2.13":"Восточные сладости типа карамели","5.3":"Сахаристые кондитерские изделия: шоколад и изделия из него","5.3.1":"Шоколад","5.3.3":"Пасты, кремы","5.4":"Какао-бобы и какао-продукты","5.4.2":"Какао-порошок","5.5":"Мучные кондитерские изделия","5.5.1":"Торты и пирожные бисквитные, слоеные, песочные, воздушные, заварные, крошковые с отделками, в т. ч. замороженные","5.5.1.1":"Торты и пирожные бисквитные, слоеные, песочные, воздушные, заварные, крошковые с отделкой сливочной","5.5.1.2":"Торты и пирожные бисквитные, слоеные, песочные, воздушные, заварные, крошковые с отделкой белково-сбивной, типа суфле","5.5.1.3":"Торты и пирожные бисквитные, слоеные, песочные, воздушные, заварные, крошковые с отделками фруктовой, помадной, из шоколадной глазури","5.5.1.4":"Торты и пирожные бисквитные, слоеные, песочные, воздушные, заварные, крошковые с отделкой жировой","5.5.1.5":"Торты и пирожные бисквитные, слоеные, песочные, воздушные, заварные, крошковые с отделкой творожно-сливочной","5.5.1.6":"Торты и пирожные бисквитные, слоеные, песочные, воздушные, заварные, крошковые с отделками типа «картошка»","5.5.1.7":"Торты и пирожные бисквитные, слоеные, песочные, воздушные, заварные, крошковые с заварным кремом","5.5.4":"Торты вафельные с начинкой","5.5.5":"Рулеты бисквитные с начинкой","5.5.6":"Кексы","5.5.8":"Вафли","5.5.9":"Пряники, коврижки","5.5.10":"Печенье","5.5.11":"Мучные восточные сладости","6.1":"Свежие и свежемороженые овощи, картофель, бахчевые, фрукты, ягоды, грибы, зелень","6.1.1":"Свежие овощи, картофель, бахчевые, фрукты, ягоды, грибы, зелень","6.1.1.3":"Овощи","6.1.1.3.2":"Капуста","6.1.1.3.3":"Морковь","6.1.1.3.4":"Томаты","6.1.1.3.5":"Огурцы","6.1.1.3.6":"Свекла","6.1.1.3.7":"Лук","6.1.1.3.9":"Перец сладкий","6.1.1.3.12":"Салат латук свежий","6.1.1.3.13":"Салат латук айсбергового типа","6.1.1.4":"Бахчевые","6.1.2":"Овощи и картофель свежезамороженные и продукты их переработки","6.1.2.2":"Овощи свежие цельные небланшированные быстрозамороженные","6.1.2.3":"Овощи зеленые и листовые быстрозамороженные","6.1.3":"Плоды, ягоды, виноград быстрозамороженные и продукты их переработки","6.2":"Сухие овощи, картофель, фрукты, ягоды, грибы","6.2.1":"Сухие овощи и картофель","6.2.2":"Сухие фрукты и ягоды","6.2.4":"Концентраты пищевые (плодоовощные)","6.3":"Овощные и фруктовые консервы, томатопродукты","6.3.1":"Консервы овощные, имеющие рН 4,2 и выше, консервы из абрикосов, персиков, груш с рН 3,8 и выше, приготовленные без добавления кислоты","6.3.4":"Консервы овощные (с рН ниже 3,7), фруктовые и плодово-ягодные пастеризованные, консервы для общественного питания с сорбиновой кислотой и рН ниже 4,0; консервы из абрикосов, персиков, груш с рН 3,8","6.4":"Консервы грибные","6.5":"Джемы, варенье, повидло, конфитюры, плоды и ягоды, протертые с сахаром, и др. плодово-ягодные концентраты с сахаром","6.6":"Овощи и фрукты, грибы соленые, маринованные, квашеные, моченые","6.7":"Специи и пряности, пряные травы","6.8":"Орехи","6.11":"Соковая продукция","6.11.1":"Консервированная соковая продукция из фруктов и (или) овощей (требования промышленной стерильности)","6.11.9":"Свежеотжатые соки","6.2.4.1":"Десерты овощные и фруктовые (тепловой сушки)","6.11.2":"Соки из фруктов, соки из овощей, фруктовые и (или) овощные нектары, морсы и фруктовые и (или) овощные сокосодержащие напитки, консервированные и газированные с использованием углекислоты с рН 3,8 и ниже","7.1":"Растительные масла","7.2":"Продукты переработки масел и жиров","7.3":"Растительно-сливочные спреды и топлёные смеси","8.1":"Минеральные и искусственно минерализованные воды","8.2":"Безалкогольные напитки и смеси","8.2.2":"Безалкогольные напитки со сроком годности от 30 суток","8.2.3":"Концентраты и смеси для напитков","8.3":"Напитки брожения","8.3.1":"Нефильтрованный квас","8.3.2":"Фильтрованный квас","8.3.3":"Нефильтрованные слабоалкогольные напитки брожения","8.3.4":"Фильтрованные непастеризованные напитки брожения","8.4":"Пиво, вино и другие алкогольные напитки","8.4.2":"Непастеризованное пиво","9.16":"Продукция общественного питания","9.16.1":"Салаты из сырых овощей и фруктов","9.16.1.2":"Салаты с заправкой","9.16.2":"Салаты из сырых овощей с добавками","9.16.2.2":"Салаты с заправкой","9.16.4":"Салаты и блюда из варёных овощей","9.16.4.2":"Салаты и блюда с заправкой","9.16.5":"Салаты с мясом, птицей и рыбой","9.16.5.2":"Салаты с заправкой","9.16.11":"Холодные супы","9.16.12":"Горячие супы и бульоны","9.16.13":"Блюда из яиц","9.16.14":"Блюда из творога","9.16.15":"Блюда из рыбы","9.16.18":"Гарниры","9.16.18.1":"Гарниры без заправки","9.16.20":"Десерты и напитки","9.16.20.4":"Свежевыжатые соки","9.16.21":"Кулинарные изделия в потребительской таре"};
+const studyLabels = {"Микробиологическое":"Микробиологические","Органолептическое":"Органолептические","Санитарно-химическое":"Санитарно-химические","Паразитологическое":"Паразитологические","Физико-химическое":"Физико-химические","Радиационное":"Радиационные","Идентификационное":"Идентификационные"};
+
+"use strict";
+
+const categories = window.RESEARCH_CATEGORIES;
+const search = document.querySelector("#search");
+const clear = document.querySelector("#clear");
+const results = document.querySelector("#results-list");
+const count = document.querySelector("#result-count");
+const workspace = document.querySelector(".workspace");
+const detail = document.querySelector("#detail");
+const copyStatus = document.querySelector("#copy-status");
+const missing = "Нет данных";
+let selected = null;
+let selectedRow = null;
+let selectedIndicators = new Set();
+let catalogTree;
+
+
+
+function normalize(value) {
+  return value.trim().toLocaleLowerCase("ru").replaceAll("ё", "е").replace(/\s+/g, " ");
+}
+
+const stopWords = new Set(["в", "во", "с", "со", "из", "и", "или", "на", "по", "для", "под", "к", "нормы", "норма", "показатель"]);
+const indicatorAliases = [
+  [/(?:бгкп|колиформ[а-я]*)/u, /(?:бгкп|колиформ)/u],
+  [/(?:кмафанм|омч|общее микробное число)/u, /(?:кмафанм|\bомч\b|общее микробное число)/u],
+  [/(?:стафилококк[а-я]*|s aureus)/u, /(?:стафилококк|s aureus)/u],
+  [/(?:кишечная палочка|e coli)/u, /(?:кишечн[а-я]* палочк|e coli)/u],
+  [/(?:сальмонелл[а-я]*)/u, /сальмонелл/u],
+  [/(?:листер[а-я]*|listeria(?: monocytogenes)?)/u, /(?:листер|listeria)/u]
+];
+const productAliases = [
+  [/^9\.16\.18\.1\.1$/, "макароны отварные макароны вареные"],
+  [/^9\.16\.4(?:\.|$)/, "винегрет салат из вареных овощей"],
+  [/^2\.7\.1$/, "брынза фета рассольный сыр"],
+  [/^2\.2\.2$/, "ультрапастеризованное молоко увт uht асептический розлив"],
+  [/^2\.8\.3$/, "топленое масло гхи"],
+  [/^9\.16\.20\.4(?:\.|$)|^6\.11\.9(?:\.|$)/, "фреш свежевыжатый сок"]
+];
+
+function words(value) {
+  return normalize(value).replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+}
+
+function tokens(value) {
+  return [...new Set(words(value).split(" ").filter(token => token && !stopWords.has(token)))];
+}
+
+function oneEditApart(a, b) {
+  if (Math.abs(a.length - b.length) > 1) return false;
+  if (a.length > b.length) return oneEditApart(b, a);
+  let index = 0;
+  while (index < a.length && a[index] === b[index]) index++;
+  if (a.length !== b.length) return a.slice(index) === b.slice(index + 1);
+  return a.slice(index + 1) === b.slice(index + 1) ||
+    (a[index] === b[index + 1] && a[index + 1] === b[index] && a.slice(index + 2) === b.slice(index + 2));
+}
+
+function wordMatch(query, word) {
+  if (query === word) return 5;
+  if (query.length >= 3 && word.startsWith(query)) return 4;
+  if (query.length >= 5 && word.length >= 5 && oneEditApart(query, word)) return 2;
+  let common = 0;
+  while (common < query.length && query[common] === word[common]) common++;
+  if (common >= 4 && query.length - common <= 3 && word.length - common <= 3) return 3;
+  return 0;
+}
+
+const searchable = categories.map(category => {
+  const title = words(category.title);
+  const aliases = [...(category.synonyms ?? []),
+    ...productAliases.filter(([code]) => code.test(category.code ?? "")).map(([, alias]) => alias)];
+  return {
+    category, title, titleTokens: tokens(title), aliases,
+    aliasTokens: tokens(aliases.join(" ")),
+    indicators: (category.indicators ?? []).map(indicator => ({indicator, name: words(indicator.name ?? "")}))
+  };
+});
+
+const indicatorNames = new Set(searchable.flatMap(entry => entry.indicators.map(({name}) => name)));
+
+function splitSearch(rawQuery) {
+  let remaining = " " + words(rawQuery) + " ";
+  const requirements = [];
+  for (const [alias, name] of indicatorAliases) {
+    const expression = new RegExp(" (?:" + alias.source + ")(?= )", "gu");
+    if (!expression.test(remaining)) continue;
+    requirements.push(value => name.test(value));
+    remaining = remaining.replace(expression, " ");
+  }
+  const terms = tokens(remaining);
+  // Treat standalone names such as «гистамин» as indicators. In mixed
+  // queries, use a name only when there is also a separate product term.
+  const matches = [...indicatorNames].filter(name =>
+    name && (remaining.trim() === name || (" " + remaining.trim() + " ").includes(" " + name + " ") &&
+      (name.includes(" ") || terms.length > 1 && /^(гистамин|нитрат[ыа]?|свинец|кадмий|мышьяк|ртуть)$/u.test(name))));
+  matches.sort((a, b) => b.length - a.length);
+  for (const name of matches) {
+    if (!remaining.includes(" " + name + " ")) continue;
+    requirements.push(value => value === name);
+    remaining = remaining.replace(" " + name + " ", " ");
+  }
+  return {terms: tokens(remaining), requirements};
+}
+
+function findCategories(rawQuery) {
+  const query = normalize(rawQuery);
+  const codeQuery = /^\d+(?:[.\s‐‑–—-]+\d+)*[.]?$/u.test(query)
+    ? query.replace(/[.\s‐‑–—-]+/gu, ".").replace(/\.$/, "")
+    : "";
+  const {terms, requirements} = codeQuery ? {terms: [], requirements: []} : splitSearch(query);
+  const matches = [];
+
+  for (const entry of searchable) {
+    const {category, title, titleTokens, aliasTokens, indicators} = entry;
+    const code = category.code ?? "";
+    const exact = Boolean(codeQuery && code === codeQuery);
+    if (codeQuery && !exact && !code.startsWith(codeQuery + ".")) continue;
+    if (query && !codeQuery && !terms.length && !requirements.length) continue;
+    const matchedGroups = requirements.map(matchesName => indicators.filter(({name}) => matchesName(name)));
+    if (matchedGroups.some(group => !group.length)) continue;
+    const matched = [...new Set(matchedGroups.flat().map(({indicator}) => indicator))];
+    const titleScores = terms.map(term => Math.max(0, ...titleTokens.map(word => wordMatch(term, word))));
+    const scores = terms.map((term, index) => Math.max(titleScores[index],
+      ...aliasTokens.map(word => Math.max(0, wordMatch(term, word) - 1))));
+    if (scores.some(score => score === 0)) continue;
+    let score = scores.reduce((sum, value) => sum + value, 0);
+    if (terms.length && title === words(query)) score += 30;
+    else if (terms.length && title.includes(words(query))) score += 12;
+    const explains = [];
+    if (scores.some((value, index) => value > titleScores[index])) explains.push("По рабочему названию или синониму");
+    else if (terms.length && scores.some(value => value <= 2)) explains.push("С учётом опечатки");
+    if (matched.length) explains.push("Показатели: " + [...new Set(matched.map(indicator => indicator.name))].slice(0, 3).join(", "));
+    matches.push({category, exact, score, matched, explanation: explains.join(" · ")});
+  }
+  return matches.sort((a, b) =>
+    Number(b.exact) - Number(a.exact) || b.score - a.score ||
+    Number(!a.category.code) - Number(!b.category.code) ||
+    (a.category.code ?? "").localeCompare(b.category.code ?? "", "ru", { numeric: true })
+  );
+}
+
+function cloneTemplate(id) {
+  return document.querySelector(id).content.firstElementChild.cloneNode(true);
+}
+
+function field(container, selector, value) {
+  const element = container.querySelector(selector);
+  const text = value?.trim();
+  element.textContent = text || missing;
+  element.classList.toggle("missing", !text);
+}
+
+function renderResults() {
+  const query = normalize(search.value);
+  const matches = findCategories(query);
+  document.querySelector("#result-heading").textContent = query ? "Результаты поиска" : "Каталог продукции";
+  count.textContent = matches.length;
+  count.setAttribute("aria-label", (query ? "Найдено категорий: " : "Карточек в каталоге: ") + matches.length);
+  clear.hidden = search.value === "";
+  results.replaceChildren();
+
+  if (matches.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty-results";
+    const title = document.createElement("strong");
+    title.textContent = "Ничего не найдено";
+    const hint = document.createElement("p");
+    hint.textContent = "Проверьте код или введите другую часть названия.";
+    empty.append(title, hint);
+    results.append(empty);
+    return;
+  }
+
+  if (!query) {
+    catalogTree ??= createCatalog(matches);
+    results.append(catalogTree);
+    return;
+  }
+
+  for (const match of matches) results.append(createResult(match));
+}
+
+function createCatalog(matches) {
+  const tree = document.createElement("div");
+  tree.className = "catalog-tree";
+
+  // A branch may have cards of its own, for example the two chemistry cards at 7.2.
+  const paths = matches.map(({ category }) => {
+    const parts = category.code?.split(".") ?? [];
+    return parts.map((_, index) => parts.slice(0, index + 1).join("."));
+  });
+  const branchCodes = new Set([
+    ...Object.keys(groupTitles),
+    ...paths.flatMap(path => path.slice(0, -1))
+  ]);
+  const groups = new Map();
+
+  for (const [index, match] of matches.entries()) {
+    const path = paths[index];
+    const branches = branchCodes.has(path.at(-1)) ? path : path.slice(0, -1);
+    if (match.category.catalogSubgroup) branches.push(match.category.catalogSubgroup);
+    if (!path.length) branches.push("water");
+    let parent = tree;
+    for (const code of branches) {
+      if (!groups.has(code)) {
+        const branch = document.createElement("details");
+        branch.className = "catalog-branch";
+        const label = document.createElement("summary");
+        if (code === "water") {
+          label.textContent = "Упакованная питьевая вода";
+        } else {
+          const badge = document.createElement("span");
+          badge.className = "code";
+          badge.textContent = code.split("/")[0];
+          label.append(badge);
+          if (groupTitles[code]) label.append(" ", groupTitles[code]);
+        }
+        const children = document.createElement("div");
+        children.className = "catalog-children";
+        branch.append(label, children);
+        parent.append(branch);
+        groups.set(code, children);
+      }
+      parent = groups.get(code);
+    }
+    parent.append(createResult(match));
+  }
+
+  return tree;
+}
+
+function createResult({ category, exact, matched, explanation }) {
+  const row = cloneTemplate("#result-template");
+  row.setAttribute("aria-controls", "detail");
+  row.setAttribute("aria-pressed", String(selected === category));
+  row.querySelector(".result-meta").hidden = !category.code && !category.demo;
+  row.querySelector(".code").hidden = !category.code;
+  if (category.code) field(row, ".code", category.code);
+  field(row, ".result-title", category.title);
+  field(row, ".result-conditions", category.conditions);
+  row.querySelector(".exact").hidden = !exact;
+  row.querySelector(".demo-tag").hidden = !category.demo;
+  if (explanation) {
+    const synonym = row.querySelector(".synonym");
+    synonym.textContent = explanation;
+    synonym.hidden = false;
+  }
+  row.addEventListener("click", () => {
+    selectedRow?.setAttribute("aria-pressed", "false");
+    selected = category;
+    selectedIndicators = new Set(matched);
+    selectedRow = row;
+    row.setAttribute("aria-pressed", "true");
+    renderDetail();
+    const heading = detail.querySelector("h2");
+    heading.focus({ preventScroll: true });
+    detail.scrollIntoView({ block: "nearest" });
+  });
+  return row;
+}
+
+function samplingForIndicator(indicator, category) {
+  return indicator.sampling?.trim() ||
+    (indicator.type === "Микробиологическое" ? category.sampling?.trim() : "") || "";
+}
+
+function compactBasis(value) {
+  return value?.replace(/приложение (?=\d)/gi, "прил. ")
+    .replace(/таблица (?=\d)/gi, "табл. ")
+    .replace(/раздел (?=[\dIVX])/gi, "разд. ")
+    .replace(/подпункт /gi, "подп. ")
+    .replace(/пункт /gi, "п. ")
+    .replace(/примечание /gi, "прим. ");
+}
+
+function compactSampling(value) {
+  const general = "ГОСТ 31904-2012, разделы 4 и 5. Учитывайте требования документа на конкретный вид продукции (п. 4.5).";
+  if (value.startsWith(general)) return "ГОСТ 31904-2012, разд. 4–5";
+  return value.replace(" — отбор проб природной минеральной воды.", ";")
+    .replace(" — отбор воды для микробиологического анализа.", "")
+    .replace("разделы 4 и 5", "разд. 4–5");
+}
+
+async function copyIndicator(indicator, category, article) {
+  const sampling = samplingForIndicator(indicator, category);
+  const parts = [
+    category.demo ? "ДЕМОНСТРАЦИОННЫЕ ДАННЫЕ" : "",
+    [category.code, category.title].filter(Boolean).join(" — "),
+    (indicator.type?.trim() || missing) + " · " + (indicator.name?.trim() || missing),
+    "Норматив: " + (indicator.limit?.trim() || missing),
+    "Основание: " + (indicator.basis?.trim() || missing),
+    indicator.price ? "Прейскурант: " + indicator.price.code : "",
+    sampling ? "Отбор проб: " + sampling : ""
+  ];
+  const value = parts.filter(Boolean).join("\n");
+  const buttonLabel = article.querySelector(".copy span");
+  const fallback = article.querySelector(".copy-fallback");
+  const textarea = fallback.querySelector("textarea");
+  copyStatus.textContent = "";
+
+  try {
+    await navigator.clipboard.writeText(value);
+    fallback.hidden = true;
+  } catch {
+    textarea.value = value;
+    fallback.hidden = false;
+    textarea.focus({ preventScroll: true });
+    textarea.select();
+    textarea.setSelectionRange(0, value.length);
+    let copied = false;
+    try {
+      copied = document.execCommand?.("copy");
+    } catch {
+      // Some browsers block clipboard commands for local files.
+    }
+    if (!copied) {
+      buttonLabel.textContent = "Копировать";
+      copyStatus.textContent = "Текст выделен для ручного копирования";
+      return;
+    }
+    article.querySelector(".copy").focus({ preventScroll: true });
+    fallback.hidden = true;
+  }
+
+  buttonLabel.textContent = "Скопировано";
+  copyStatus.textContent = "Показатель скопирован";
+}
+
+
+
+function groupReferences(group, selector, label, indicators, getReference, formatReference, absent) {
+  const byReference = new Map();
+  for (const indicator of indicators) {
+    const reference = getReference(indicator)?.trim() || "";
+    const names = byReference.get(reference) ?? [];
+    names.push(indicator.name || missing);
+    byReference.set(reference, names);
+  }
+  const cell = group.querySelector(selector);
+  if (byReference.size <= 2) {
+    for (const reference of byReference.keys()) {
+      const item = document.createElement("span");
+      item.textContent = reference ? formatReference(reference) : absent;
+      if (reference) item.title = reference;
+      cell.append(item);
+    }
+  } else {
+    cell.textContent = byReference.size + " вариантов · см. по показателям";
+  }
+  if (byReference.size < 2) return;
+
+  const mapping = document.createElement("details");
+  mapping.className = "study-mapping";
+  const summary = document.createElement("summary");
+  summary.textContent = label + " по показателям";
+  const list = document.createElement("dl");
+  for (const [reference, names] of byReference) {
+    const item = document.createElement("div");
+    const term = document.createElement("dt");
+    term.textContent = reference || absent;
+    const definition = document.createElement("dd");
+    definition.textContent = [...new Set(names)].join(", ");
+    item.append(term, definition);
+    list.append(item);
+  }
+  mapping.append(summary, list);
+  group.querySelector(".study-mappings").append(mapping);
+}
+
+function renderPrice(article, indicator) {
+  if (!indicator.price) return;
+  article.classList.add('has-price');
+  const cell = article.querySelector('.price-code');
+  cell.hidden = false;
+  const heading = document.createElement('span');
+  heading.className = 'price-heading';
+  heading.textContent = 'Прейскурант';
+  const code = document.createElement('span');
+  code.textContent = indicator.price.code;
+  code.title = [indicator.price.source, indicator.price.note].filter(Boolean).join(' · ');
+  cell.append(heading, code);
+
+}
+
+function createStudyGroup(type, indicators, category) {
+  const group = cloneTemplate("#study-group-template");
+  group.open = indicators.some(indicator => selectedIndicators.has(indicator));
+  field(group, ".study-label", studyLabels[type] ?? type);
+  group.querySelector(".count").textContent = indicators.length;
+  groupReferences(group, ".study-basis", "Основания", indicators,
+    indicator => indicator.basis, compactBasis, "Не указано");
+  groupReferences(group, ".study-sampling", "Отбор проб", indicators,
+    indicator => samplingForIndicator(indicator, category), compactSampling, "Не указан");
+
+  const preparation = indicators.find(indicator => indicator.price?.preparation)?.price.preparation;
+  if (preparation) {
+    const note = document.createElement("p");
+    note.className = "study-preparation";
+    note.textContent = "Пробоподготовка · " + preparation;
+    group.querySelector(".study-mappings").prepend(note);
+  }
+
+  const rows = group.querySelector(".study-rows");
+  for (const indicator of indicators) {
+    const article = cloneTemplate("#indicator-template");
+    article.classList.toggle("matched-indicator", selectedIndicators.has(indicator));
+    field(article, "h4", indicator.name);
+    field(article, ".limit", indicator.limit);
+    renderPrice(article, indicator);
+    article.querySelector(".copy").addEventListener("click", () => copyIndicator(indicator, category, article));
+    rows.append(article);
+  }
+  return group;
+}
+
+
+const samplingSelections = new WeakMap();
+const samplingMassUnknown = "Массу или объём уточнить в лаборатории.";
+
+const category9ChemistryMass = new Map([
+  ...["1.1", "1.2.2", "2.1", "2.2.2", "3", "4.1", "4.2.2"].map(code => [code, "2 порции, суммарно не менее 200 г"]),
+  ...["5.1", "5.2.2"].map(code => [code, "1–2 порции, суммарно не менее 200 г, если блюдо отбирают как закуску с мясом, птицей или рыбой"]),
+  ["8", "1–2 порции, суммарно не менее 100 г"],
+  ...["11.1", "11.2", "11.3", "12.1", "12.2", "12.3"].map(code => [code, "2–3 порции, суммарно не менее 300 г"]),
+  ["18.1.2", "не менее 200 г для гарнира"],
+  ["19", "не менее 200 г"],
+  ["20.5", "2 порции, суммарно не менее 200 г для десерта с сахаром и/или соусом; для молочного желе — 2 порции, суммарно не менее 300 г"],
+  ["20.6", "2 порции, суммарно не менее 200 г для десерта с сахаром и/или соусом"]
+]);
+
+function category9SamplingAmount(code, study) {
+  if (!code?.startsWith("9.16.")) return "";
+  const item = code.slice("9.16.".length);
+  if (study === "chemistry") {
+    if (item === "26") {
+      return "Для тортов, пирожных и рулетов в штучной фасовке, а также весовых рулетов — объединённая проба от 400 г; для пирожных в лотках — от 300 г (ГОСТ 5904-2019, пп. 6.10.1–6.10.4, если применим; в карточке отмечен как вне ОА). Для выбранных показателей уточните в лаборатории массу и число проб.";
+    }
+    const amount = category9ChemistryMass.get(item);
+    return amount
+      ? "Для физико-химического отбора: " + amount + " (ГОСТ Р 54607.1-2011, табл. А.3). Достаточность для выбранных показателей и число проб подтвердите в лаборатории."
+      : "Для этой продукции не подтверждена масса пробы на выбранные показатели. " + samplingMassUnknown;
+  }
+
+  const general = "ГОСТ 31904-2012, пп. 4.9–4.10: массу берут из документа на продукцию. Если масса не задана, для фасованной продукции — от 1 единицы на каждую единицу выборки; для указанных в п. 4.9.2 видов продукции — не более 1000 г (см³) на единицу выборки. Фактическую массу подтвердите в лаборатории.";
+  if (item === "20.8") return "Для коктейля, идентифицированного как молочная продукция, сверить профильные документы. Для коктейля общепита подтвердить необходимый объём в лаборатории.";
+  if (["20.1", "20.2", "20.4.1", "20.4.2", "21.2", "21.3", "22"].includes(item)) return general;
+  return "Если применимы МУ 2657-82, п. 2.7.2.2: для готового блюда с раздачи — целая порция; из общей массы на производстве — около 200 г. Это ориентир для этого способа отбора. " + general;
+}
+
+function samplingQuantity(code, study) {
+  if (!code?.startsWith("9.16.")) return ["Уточнить"];
+  const item = code.slice(5);
+  if (study === "microbiology") {
+    const rule = category9SamplingAmount(code, study);
+    return rule.includes("около 200 г")
+      ? ["1 порция (с раздачи)", "≈200 г (из общей массы)"]
+      : ["Уточнить"];
+  }
+  if (item === "26") return ["≥400 г (штучные изделия и весовые рулеты)", "≥300 г (пирожные в лотках)"];
+  const rule = category9ChemistryMass.get(item);
+  if (!rule) return ["Уточнить"];
+  const mass = rule.match(/не менее (\d+) г/)[1];
+  const portions = rule.match(/^([\d–]+) порции/)?.[1];
+  const quantity = (portions ? portions + " порц. · " : "") + "≥" + mass + " г";
+  return item === "20.5" ? [quantity, "≥300 г (молочное желе)"] : [quantity];
+}
+
+function showSamplingQuantity(cell, values) {
+  cell.replaceChildren();
+  for (const value of values) {
+    const line = document.createElement("span");
+    line.textContent = value;
+    cell.append(line);
+  }
+}
+
+function samplingDetails(rule, list) {
+  const details = document.createElement("details");
+  details.className = "sampling-references";
+  const summary = document.createElement("summary");
+  summary.textContent = "Основание и условия";
+  const note = document.createElement("p");
+  note.textContent = rule;
+  details.append(summary, note, list);
+  return details;
+}
+
+function samplingReferences(indicators, category, showNames) {
+  const references = new Map();
+  for (const indicator of indicators) {
+    const reference = samplingForIndicator(indicator, category);
+    const names = references.get(reference) ?? new Set();
+    names.add(indicator.name || missing);
+    references.set(reference, names);
+  }
+
+  const list = document.createElement("ul");
+  for (const [reference, names] of references) {
+    const item = document.createElement("li");
+    item.textContent = reference || "Документ по отбору уточнить";
+    if (showNames) {
+      const indicators = document.createElement("div");
+      indicators.textContent = [...names].join(", ");
+      item.append(indicators);
+    }
+    list.append(item);
+  }
+  return list;
+}
+
+function renderSamplingPlan(card, groups, category) {
+  const microbiology = groups.get("Микробиологическое") ?? [];
+  const chemistry = groups.get("Санитарно-химическое") ?? [];
+  if (!microbiology.length && !chemistry.length) return;
+
+  const plan = card.querySelector(".sampling-plan");
+  const rows = plan.querySelector(".sampling-plan-rows");
+  plan.hidden = false;
+
+  if (microbiology.length) {
+    const row = document.createElement("tr");
+    const title = document.createElement("th");
+    title.scope = "row";
+    title.textContent = "Микробиология";
+    title.append(samplingDetails(category9SamplingAmount(category.code, "microbiology") || samplingMassUnknown,
+      samplingReferences(microbiology, category, false)));
+    const amount = document.createElement("td");
+    amount.className = "sampling-amount";
+    showSamplingQuantity(amount, samplingQuantity(category.code, "microbiology"));
+    row.append(title, amount);
+    rows.append(row);
+  }
+
+  if (!chemistry.length) return;
+
+  const chosen = samplingSelections.get(category) ?? new Set();
+  samplingSelections.set(category, chosen);
+  const row = document.createElement("tr");
+  const title = document.createElement("th");
+  title.scope = "row";
+  title.textContent = "Санхимия";
+  const count = document.createElement("p");
+  count.setAttribute("role", "status");
+  const picker = document.createElement("details");
+  const toggle = document.createElement("summary");
+  const options = document.createElement("div");
+  options.className = "sampling-options";
+  const amount = document.createElement("td");
+  amount.className = "sampling-amount";
+  const references = document.createElement("div");
+
+  function updateSelection() {
+    const selected = chemistry.filter(indicator => chosen.has(indicator));
+    count.textContent = "Выбрано " + selected.length + " из " + chemistry.length;
+    toggle.textContent = selected.length ? "Изменить выбор" : "Выбрать показатели";
+    showSamplingQuantity(amount, selected.length ? samplingQuantity(category.code, "chemistry") : ["—"]);
+    references.replaceChildren();
+    if (selected.length) references.append(samplingDetails(
+      category9SamplingAmount(category.code, "chemistry") || samplingMassUnknown,
+      samplingReferences(selected, category, true)));
+
+  }
+
+  for (const indicator of chemistry) {
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = chosen.has(indicator);
+    checkbox.addEventListener("change", () => {
+      if (checkbox.checked) chosen.add(indicator);
+      else chosen.delete(indicator);
+      updateSelection();
+    });
+    const name = document.createElement("span");
+    name.textContent = indicator.name || missing;
+    if (chemistry.some(other => other !== indicator && other.name === indicator.name)) {
+      name.textContent += " · " + [indicator.limit, indicator.basis].filter(Boolean).join(" · ");
+    }
+    label.append(checkbox, name);
+    options.append(label);
+  }
+
+  picker.append(toggle, options);
+  title.append(count, picker, references);
+  row.append(title, amount);
+  rows.append(row);
+  updateSelection();
+}
+
+function renderDetail() {
+  workspace.classList.toggle("show-detail", Boolean(selected));
+  document.body.classList.toggle("has-selection", Boolean(selected));
+  if (!selected) {
+    detail.replaceChildren(cloneTemplate("#placeholder-template"));
+    return;
+  }
+
+  const category = selected;
+  const card = cloneTemplate("#detail-template");
+  card.querySelector(".detail-meta").hidden = !category.code && !category.demo;
+  card.querySelector(".code").hidden = !category.code;
+  if (category.code) field(card, ".code", category.code);
+  field(card, "h2", category.title);
+  field(card, ".conditions", category.conditions);
+  card.querySelector(".demo-tag").hidden = !category.demo;
+
+  const indicators = category.indicators ?? [];
+  card.querySelector(".count").textContent = indicators.length;
+  const list = card.querySelector(".indicators");
+  if (!indicators.length) {
+    list.textContent = "Показатели пока не внесены.";
+    if (category.sampling) {
+      const sampling = document.createElement("p");
+      sampling.textContent = "Отбор проб: " + category.sampling;
+      list.append(sampling);
+    }
+  }
+
+  const groups = new Map();
+  for (const indicator of indicators) {
+    const type = indicator.type?.trim() || "Прочие";
+    const group = groups.get(type) ?? [];
+    group.push(indicator);
+    groups.set(type, group);
+  }
+  renderSamplingPlan(card, groups, category);
+  for (const [type, group] of groups) list.append(createStudyGroup(type, group, category));
+  card.querySelector(".back").addEventListener("click", () => {
+    const row = selectedRow;
+    selected = null;
+    selectedRow = null;
+    row?.setAttribute("aria-pressed", "false");
+    renderDetail();
+    (row ?? search).focus();
+  });
+  detail.replaceChildren(card);
+}
+
+function updateQuery() {
+  selectedRow?.setAttribute("aria-pressed", "false");
+  selectedRow = null;
+  selected = null;
+  renderResults();
+  renderDetail();
+}
+
+if (Array.isArray(categories)) {
+  const hasDemo = categories.some(category => category.demo);
+  document.querySelector("#demo-notice").hidden = !hasDemo;
+  document.querySelector("#search-hint").hidden = !hasDemo;
+  search.addEventListener("input", updateQuery);
+  clear.addEventListener("click", () => {
+    search.value = "";
+    updateQuery();
+    search.focus();
+  });
+  for (const example of document.querySelectorAll("[data-query]")) {
+    example.addEventListener("click", () => {
+      search.value = example.dataset.query;
+      updateQuery();
+      search.focus();
+    });
+  }
+  for (const shortcut of document.querySelectorAll("[data-section]")) {
+    shortcut.addEventListener("click", () => {
+      search.value = "";
+      updateQuery();
+      const code = shortcut.dataset.section;
+      for (const branch of catalogTree.children) {
+        if (branch.tagName !== "DETAILS") continue;
+        const badge = branch.querySelector(":scope > summary .code");
+        branch.open = code !== "all" && badge?.textContent.trim() === code;
+        if (branch.open) branch.scrollIntoView({block: "start"});
+      }
+      if (code === "all") document.querySelector("#result-heading").scrollIntoView({block: "start"});
+    });
+  }
+  updateQuery();
+  document.querySelector("#catalog-fallback").remove();
+  document.querySelector(".search-panel").hidden = false;
+  detail.hidden = false;
+}
+
+});</script>
+</body>
+</html>
