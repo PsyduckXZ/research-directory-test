@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Справочник исследований</title>
+<p id="opening" role="status">Открываем справочник…</p>
+<noscript>Для открытия справочника включите JavaScript в Chrome или Edge.</noscript>
+<script>
+(async () => {
+  try {
+    const compressed = Uint8Array.from(atob("@@PAYLOAD@@"), character => character.charCodeAt(0));
+    const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream("gzip"));
+    const html = await new Response(stream).text();
+    document.open();
+    document.write(html);
+    document.close();
+  } catch (error) {
+    document.querySelector("#opening").textContent =
+      "Не удалось открыть справочник. Откройте этот файл в актуальной версии Chrome или Edge.";
+    console.error(error);
+  }
+})();
+</script>
+</html>
