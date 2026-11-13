@@ -9,7 +9,7 @@ function samplingText(indicator, category) {
 
 function renderIndicator(indicator) {
   const { name, limit, price } = indicator;
-  const priceHtml = price ? '<br><span class="fallback-price" title="' + escape(price.note) +
+  const priceHtml = price ? '<br><span class="fallback-price" title="' + escape([price.note, price.preparation && "Пробоподготовка " + price.preparation].filter(Boolean).join(" · ")) +
     '">Прейскурант · ' + escape(price.code) + "</span>" : "";
   return "<li><strong>" + escape(name) + "</strong><br>" + escape(limit) + priceHtml + "</li>";
 }
@@ -29,11 +29,14 @@ function renderStudy(type, indicators, category, studyLabels) {
       escape(basis || "Нет данных") + "</p><p><strong>Отбор проб</strong> " +
       escape(sampling || "Нет данных") + "</p><ul>" + rows.map(renderIndicator).join("") + "</ul></div>";
   }).join("");
-  const preparation = indicators.find(indicator => indicator.price?.preparation)?.price.preparation;
-  const preparationHtml = preparation ? '<p class="study-preparation">Пробоподготовка · ' +
-    escape(preparation) + "</p>" : "";
+  const preparations = new Set(indicators.map(indicator => indicator.price?.preparation).filter(Boolean));
+  const preparationHtml = [...preparations].map(preparation => '<p class="study-preparation">Пробоподготовка · ' +
+    escape(preparation) + "</p>").join("");
+  const priceNotes = new Set(indicators.filter(({ price }) => price?.code === "Уточнить" || price?.code === "р. 8, п. 50")
+    .map(({ price }) => price.note).filter(Boolean));
+  const priceNotesHtml = [...priceNotes].map(note => '<p class="study-preparation">' + escape(note) + "</p>").join("");
   return '<details class="fallback-study"><summary>' + escape(studyLabels[type]) + "</summary>" +
-    references + preparationHtml + "</details>";
+    references + preparationHtml + priceNotesHtml + "</details>";
 }
 
 function renderCard(card, studyLabels) {
@@ -78,7 +81,7 @@ export function renderFallback(categories, { groupTitles, studyLabels }) {
 
   function renderNode(node) {
     if (node.card) return renderCard(node.card, studyLabels);
-    const label = node.code === "water" ? "Упакованная питьевая и минеральная вода" :
+    const label = node.code === "water" ? "Питьевая вода" :
       '<span class="code">' + escape(node.code.split("/")[0]) + "</span>" +
       (groupTitles[node.code] ? " " + escape(groupTitles[node.code]) : "");
     return '<details class="catalog-branch"><summary>' + label + '</summary><div class="catalog-children">' +
