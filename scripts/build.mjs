@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderFallback } from "./render-fallback.mjs";
@@ -8,8 +9,10 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const read = path => readFile(resolve(root, path), "utf8");
 const stringify = value => JSON.stringify(value).replaceAll("<", "\\u003c");
 const check = process.argv.includes("--check");
-const output = resolve(root, process.argv.slice(2).find(arg => arg !== "--check") ??
-  "dist/research-directory-sampling-trial.html");
+const pwa = process.argv.includes("--pwa");
+const output = resolve(root, process.argv.slice(2).find(arg => !["--check", "--pwa"].includes(arg)) ??
+  (pwa ? "dist/pwa/index.html" : "dist/research-directory-sampling-trial.html"));
+assert(!pwa || output.endsWith("/index.html"), "Для PWA укажите путь к index.html");
 const template = await read("src/index.template.html");
 const app = await read("src/app.js");
 const styles = await read("src/styles.css");
@@ -58,15 +61,26 @@ for (const file of entries) {
 
 const identities = categories.map(({ code, title }) => JSON.stringify([code, title]));
 assert.equal(new Set(identities).size, categories.length, "Повторяется сочетание кода и названия карточки");
+const labelScript = "const groupTitles = " + stringify(labels.groupTitles) + ";\nconst studyLabels = " + stringify(labels.studyLabels) + ";";
+const catalogFiles = entries.map(name => "data/" + name);
 const parts = {
   STYLES: styles,
-  FALLBACK: renderFallback(categories, labels),
-  CATALOG: "window.RESEARCH_CATEGORIES = " + stringify(categories) + ";",
-  LABELS: "const groupTitles = " + stringify(labels.groupTitles) + ";\nconst studyLabels = " + stringify(labels.studyLabels) + ";",
-  APP: app,
+  PWAHEAD: pwa ? [
+    '  <link rel="manifest" href="manifest.webmanifest">',
+    '  <link rel="apple-touch-icon" href="icon-180.png">',
+    '  <meta name="theme-color" content="#183c68">'
+  ].join("\n") : "",
+  PWASTATUS: pwa ? '    <p id="offline-status" class="offline-status" role="status">Готовим каталог для работы без интернета…</p>' : "",
+  FALLBACK: pwa ? "" : renderFallback(categories, labels),
+  SCRIPTS: pwa
+    ? `<script>${await read("src/pwa/start.js")}\nstartDirectoryPwa(${stringify(catalogFiles)}, () => {\n${labelScript}\n${app}\n});</script>`
+    : `<script>window.RESEARCH_CATEGORIES = ${stringify(categories)};</script>\n<script>${labelScript}\n${app}</script>`,
   COUNT: String(categories.length),
 };
-const html = template.replace(/@@([A-Z]+)@@/g, (_, name) => {
+const pageTemplate = pwa
+  ? template.replace(/<div id="catalog-fallback">.*?@@FALLBACK@@<\/div>/s, '<div id="catalog-fallback"></div>')
+  : template;
+const html = pageTemplate.replace(/@@([A-Z]+)@@/g, (_, name) => {
   assert(Object.hasOwn(parts, name), "Неизвестный маркер " + name);
   return parts[name];
 });
@@ -74,5 +88,25 @@ const indicators = categories.reduce((sum, card) => sum + card.indicators.length
 if (!check) {
   await mkdir(dirname(output), { recursive: true });
   await writeFile(output, html, "utf8");
+  if (pwa) {
+    const directory = dirname(output);
+    const assets = ["manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png"];
+    const files = ["index.html", ...assets, ...catalogFiles];
+    const workerTemplate = await read("src/pwa/sw.template.js");
+    const hash = createHash("sha256").update(html).update(workerTemplate);
+    await mkdir(resolve(directory, "data"), { recursive: true });
+    for (const asset of assets) {
+      const bytes = await readFile(resolve(root, "src/pwa", asset));
+      hash.update(bytes);
+      await copyFile(resolve(root, "src/pwa", asset), resolve(directory, asset));
+    }
+    for (const name of entries) {
+      const source = resolve(catalogDir, name);
+      hash.update(await readFile(source));
+      await copyFile(source, resolve(directory, "data", name));
+    }
+    const worker = workerTemplate.replace("@@REVISION@@", hash.digest("hex")).replace("@@FILES@@", stringify(files));
+    await writeFile(resolve(directory, "sw.js"), worker, "utf8");
+  }
 }
 console.log(`${categories.length} карточек, ${indicators} строк показателей. ${check ? "Проверка пройдена." : output}`);
