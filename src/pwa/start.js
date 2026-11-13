@@ -1,6 +1,6 @@
 "use strict";
 
-async function startDirectoryPwa(catalogFiles, renderDirectory) {
+async function startDirectoryPwa(catalogFiles, renderDirectory, updates) {
   const status = document.querySelector("#offline-status");
   try {
     const sections = await Promise.all(catalogFiles.map(async path => {
@@ -16,32 +16,17 @@ async function startDirectoryPwa(catalogFiles, renderDirectory) {
     return;
   }
 
-  if (!("serviceWorker" in navigator)) {
-    status.textContent = "Офлайн-доступ недоступен в этом браузере.";
-    return;
-  }
-
-  const showReady = () => {
-    status.textContent = "Справочник готов к работе без интернета.";
-  };
-
-  try {
-    const registration = await navigator.serviceWorker.register("./sw.js");
-    if (navigator.serviceWorker.controller) {
-      showReady();
-      return;
+  if (updates) {
+    setupPwaUpdates(status);
+  } else if (navigator.serviceWorker) {
+    try {
+      await navigator.serviceWorker.register("./sw.js");
+      await navigator.serviceWorker.ready;
+      status.textContent = "Справочник готов к работе без интернета.";
+    } catch {
+      status.textContent = "Не удалось настроить офлайн-доступ. Обновите страницу.";
     }
-    navigator.serviceWorker.addEventListener("controllerchange", showReady, { once: true });
-    const worker = registration.installing ?? registration.waiting;
-    const checkInstall = () => {
-      if (worker?.state === "redundant" && !navigator.serviceWorker.controller) {
-        status.textContent = "Не удалось сохранить каталог. Проверьте интернет и обновите страницу.";
-      }
-    };
-    worker?.addEventListener("statechange", checkInstall);
-    checkInstall();
-  } catch (error) {
-    status.textContent = "Не удалось настроить офлайн-доступ. Обновите страницу.";
-    console.error(error);
+  } else {
+    status.textContent = "Офлайн-доступ недоступен в этом браузере.";
   }
 }
