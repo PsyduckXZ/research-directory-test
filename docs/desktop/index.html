@@ -21,7 +21,7 @@ async function fetchDesktopRelease(manifest = desktopManifest) {
   if (!response.ok) throw new Error("Не удалось получить номер версии");
   const release = await response.json();
   if (!Number.isSafeInteger(release.release) || release.release < 1 ||
-      !/^\d+\.\d+\.\d+(?:-test)?$/.test(release.version) ||
+      !/^\d+\.\d+(?:\.\d+)?(?:-test)?$/.test(release.version) ||
       release.file !== `research-directory-${release.version}.html.gz` ||
       !/^[a-f0-9]{64}$/.test(release.sha256)) {
     throw new Error("Неверное описание версии");

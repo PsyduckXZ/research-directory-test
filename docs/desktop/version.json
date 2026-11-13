@@ -1,6 +1,6 @@
 {
-  "release": 5,
-  "version": "0.0.5-test",
-  "file": "research-directory-0.0.5-test.html.gz",
-  "sha256": "e08dc82f26fc06c94c4ec58dbf6d3df1ecff7980223bc09e08b016a48ce33330"
+  "release": 1000,
+  "version": "0.1",
+  "file": "research-directory-0.1.html.gz",
+  "sha256": "75cd28fdcfbbf7eed8643e19d3d65b79f2f130d11101ae762bfe862a3d8e268a"
 }
