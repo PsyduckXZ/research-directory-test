@@ -11,6 +11,7 @@ const read = path => readFile(resolve(root, path), "utf8");
 const stringify = value => JSON.stringify(value).replaceAll("<", "\\u003c");
 const check = process.argv.includes("--check");
 const pwa = process.argv.includes("--pwa");
+const web = process.argv.includes("--web");
 const releaseArg = process.argv.find(arg => arg.startsWith("--release="));
 const version = releaseArg?.slice("--release=".length);
 assert(!releaseArg || /^\d+\.\d+\.\d+(?:-test)?$/.test(version), "Неверный номер релиза");
@@ -18,11 +19,12 @@ const releaseNumber = version ? version.split("-")[0].split(".").reduce((number,
   assert(Number(part) < 1000, "Компонент версии должен быть меньше 1000");
   return number * 1000 + Number(part);
 }, 0) : 0;
+assert(!web || (!pwa && version), "Веб-сборка требует номер релиза и отдельна от PWA");
 const migrate = process.argv.includes("--migrate");
 assert(!migrate || (pwa && version), "Миграция требует PWA с номером релиза");
 const output = resolve(root, process.argv.slice(2).find(arg => !arg.startsWith("--")) ??
-  (pwa ? "dist/pwa/index.html" : version ? "dist/windows/index.html" : "dist/research-directory-sampling-trial.html"));
-assert(!pwa || output.endsWith("/index.html"), "Для PWA укажите путь к index.html");
+  (pwa ? "dist/pwa/index.html" : web ? "dist/web/index.html" : version ? "dist/windows/index.html" : "dist/research-directory-sampling-trial.html"));
+assert(!(pwa || web) || output.endsWith("/index.html"), "Укажите путь к index.html");
 const template = await read("src/index.template.html");
 const app = await read("src/app.js");
 const styles = await read("src/styles.css");
@@ -78,8 +80,9 @@ const updateControls = version ? `<div class="update-panel">
       <p id="update-status" role="status"></p>
       ${pwa
         ? '<button type="button" id="apply-update" hidden>Применить обновление</button>'
-        : '<button type="button" id="download-update" hidden>Загрузить обновление</button><a id="save-update" hidden>Сохранить новый HTML</a>'}
+        : web ? "" : '<button type="button" id="download-update" hidden>Загрузить обновление</button><a id="save-update" hidden>Сохранить новый HTML</a>'}
     </div>` : "";
+const webUpdateScript = web ? await read("src/web-update.js") : "";
 const pwaUpdateScript = pwa ? await read("src/pwa/update.js") : "";
 const windowsReleaseUrl = "https://psyduckxz.github.io/research-directory-test/windows/version.json";
 const parts = {
@@ -96,7 +99,23 @@ const parts = {
   FALLBACK: pwa ? "" : renderFallback(categories, labels),
   SCRIPTS: pwa
     ? `<script>${await read("src/pwa/start.js")}\n${pwaUpdateScript}\nstartDirectoryPwa(${stringify(catalogFiles)}, () => {\n${labelScript}\n${app}\n}, ${Boolean(version)});</script>`
-    : `<script>window.RESEARCH_CATEGORIES = ${stringify(categories)};</script>\n<script>${labelScript}\n${app}\n${version ? `${await read("src/windows-update.js")}\nsetupWindowsUpdates(${releaseNumber}, "${windowsReleaseUrl}");` : ""}</script>`,
+    : `<script>window.RESEARCH_CATEGORIES = ${stringify(categories)};</script>\n<script>${web ? "(() => {\n" : ""}${labelScript}\n${app}\n${web ? `${webUpdateScript}\nsetupDesktopUpdates(${releaseNumber}, () => ({
+  query: search.value,
+  card: selected ? [selected.code, selected.title] : null
+}), (query, card) => {
+  search.value = query;
+  updateQuery();
+  if (!card) return;
+  const row = [...results.querySelectorAll(".result")].find(row =>
+    (row.querySelector(".code").textContent || null) === card[0] &&
+    row.querySelector(".result-title").textContent === card[1]);
+  if (!row) return;
+  for (let parent = row.parentElement; parent !== results; parent = parent.parentElement) {
+    if (parent.tagName === "DETAILS") parent.open = true;
+  }
+  row.click();
+});
+})();` : version ? `${await read("src/windows-update.js")}\nsetupWindowsUpdates(${releaseNumber}, "${windowsReleaseUrl}");` : ""}</script>`,
   COUNT: String(categories.length),
 };
 const pageTemplate = pwa
@@ -109,7 +128,16 @@ const html = pageTemplate.replace(/@@([A-Z]+)@@/g, (_, name) => {
 const indicators = categories.reduce((sum, card) => sum + card.indicators.length, 0);
 if (!check) {
   await mkdir(dirname(output), { recursive: true });
-  if (!pwa && version) {
+  if (web) {
+    const payload = gzipSync(html);
+    const file = "research-directory-" + version + ".html.gz";
+    const manifest = { release: releaseNumber, version, file, sha256: createHash("sha256").update(payload).digest("hex") };
+    const directory = dirname(output);
+    const loader = await read("src/web-loader.html");
+    await writeFile(output, loader.replace("@@WEBUPDATE@@", () => webUpdateScript), "utf8");
+    await writeFile(resolve(directory, file), payload);
+    await writeFile(resolve(directory, "version.json"), JSON.stringify(manifest, null, 2) + "\n", "utf8");
+  } else if (!pwa && version) {
     const payload = gzipSync(html).toString("base64");
     const portable = await read("src/windows-loader.html");
     const document = portable.replace("@@PAYLOAD@@", payload);
@@ -142,5 +170,5 @@ if (!check) {
     await writeFile(resolve(directory, "sw.js"), worker, "utf8");
   }
 }
-const result = !pwa && version ? resolve(dirname(output), "research-directory-" + version + ".html") : output;
+const result = !pwa && !web && version ? resolve(dirname(output), "research-directory-" + version + ".html") : output;
 console.log(`${categories.length} карточек, ${indicators} строк показателей. ${check ? "Проверка пройдена." : result}`);
