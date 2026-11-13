@@ -209,7 +209,7 @@ function createCatalog(matches) {
         branch.className = "catalog-branch";
         const label = document.createElement("summary");
         if (code === "water") {
-          label.textContent = "Упакованная питьевая вода";
+          label.textContent = "Питьевая вода";
         } else {
           const badge = document.createElement("span");
           badge.className = "code";
@@ -381,6 +381,7 @@ function renderPrice(article, indicator) {
   code.textContent = indicator.price.code;
   code.title = [indicator.price.source, indicator.price.note].filter(Boolean).join(' · ');
   cell.append(heading, code);
+  if (indicator.price.preparation) code.title += " · Пробоподготовка " + indicator.price.preparation;
 
 }
 
@@ -394,12 +395,21 @@ function createStudyGroup(type, indicators, category) {
   groupReferences(group, ".study-sampling", "Отбор проб", indicators,
     indicator => samplingForIndicator(indicator, category), compactSampling, "Не указан");
 
-  const preparation = indicators.find(indicator => indicator.price?.preparation)?.price.preparation;
-  if (preparation) {
+  const preparations = new Set(indicators.map(indicator => indicator.price?.preparation).filter(Boolean));
+  for (const preparation of preparations) {
     const note = document.createElement("p");
     note.className = "study-preparation";
     note.textContent = "Пробоподготовка · " + preparation;
-    group.querySelector(".study-mappings").prepend(note);
+    group.querySelector(".study-mappings").append(note);
+  }
+
+  const priceNotes = new Set(indicators.filter(({ price }) => price?.code === "Уточнить" || price?.code === "р. 8, п. 50")
+    .map(({ price }) => price.note).filter(Boolean));
+  for (const text of priceNotes) {
+    const note = document.createElement("p");
+    note.className = "study-preparation";
+    note.textContent = text;
+    group.querySelector(".study-mappings").append(note);
   }
 
   const rows = group.querySelector(".study-rows");

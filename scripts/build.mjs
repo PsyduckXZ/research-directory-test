@@ -35,11 +35,16 @@ const catalogDir = resolve(root, "data/categories");
 const entries = (await readdir(catalogDir)).filter(name => name.endsWith(".json")).sort();
 assert(entries.length, "Нет файлов каталога");
 const categories = [];
+const cardsByFile = new Map();
+const priceRules = JSON.parse(await read("data/price-rules.json")).indicators.map(({ namePattern, price }) => ({
+  name: new RegExp(namePattern, "iu"), price
+}));
 
 for (const file of entries) {
   const section = file.slice(0, -5);
   const cards = JSON.parse(await read("data/categories/" + file));
   assert(Array.isArray(cards) && cards.length, file + ": ожидается непустой массив карточек");
+  cardsByFile.set(file, cards);
   for (const [index, card] of cards.entries()) {
     const at = file + ", карточка " + (index + 1);
     assert(card && typeof card === "object", at + ": ожидается объект");
@@ -59,6 +64,10 @@ for (const file of entries) {
         assert(typeof indicator[field] === "string", where + ": неверное поле " + field);
       }
       assert(indicator.name.trim(), where + ": нет названия показателя");
+      const priceRule = card.code && !card.code.startsWith("8.1.") && indicator.type === "Санитарно-химическое"
+        ? priceRules.find(rule => rule.name.test(indicator.name))
+        : undefined;
+      if (priceRule && !indicator.price) indicator.price = priceRule.price;
       if (indicator.price !== undefined) {
         const price = indicator.price;
         assert(price && typeof price === "object" && !Array.isArray(price), where + ": неверный прейскурант");
@@ -161,7 +170,7 @@ if (!check) {
     await mkdir(resolve(directory, "data"), { recursive: true });
     for (const asset of assets) await copyFile(resolve(root, "src/pwa", asset), resolve(directory, asset));
     for (const name of entries) {
-      await copyFile(resolve(catalogDir, name), resolve(directory, "data", name));
+      await writeFile(resolve(directory, "data", name), JSON.stringify(cardsByFile.get(name), null, 2) + "\n", "utf8");
     }
     const hashes = Object.fromEntries(await Promise.all(files.map(async file => [
       file, createHash("sha256").update(await readFile(resolve(directory, file))).digest("hex")
