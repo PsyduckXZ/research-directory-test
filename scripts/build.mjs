@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { gzipSync } from "node:zlib";
 import { createHash } from "node:crypto";
 import { copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { renderFallback } from "./render-fallback.mjs";
 
@@ -14,17 +14,19 @@ const pwa = process.argv.includes("--pwa");
 const web = process.argv.includes("--web");
 const releaseArg = process.argv.find(arg => arg.startsWith("--release="));
 const version = releaseArg?.slice("--release=".length);
-assert(!releaseArg || /^\d+\.\d+\.\d+(?:-test)?$/.test(version), "Неверный номер релиза");
-const releaseNumber = version ? version.split("-")[0].split(".").reduce((number, part) => {
+assert(!releaseArg || /^\d+\.\d+(?:\.\d+)?(?:-test)?$/.test(version), "Неверный номер релиза");
+const versionParts = version?.split("-")[0].split(".") ?? [];
+if (versionParts.length === 2) versionParts.push("0");
+const releaseNumber = versionParts.reduce((number, part) => {
   assert(Number(part) < 1000, "Компонент версии должен быть меньше 1000");
   return number * 1000 + Number(part);
-}, 0) : 0;
+}, 0);
 assert(!web || (!pwa && version), "Веб-сборка требует номер релиза и отдельна от PWA");
 const migrate = process.argv.includes("--migrate");
 assert(!migrate || (pwa && version), "Миграция требует PWA с номером релиза");
 const output = resolve(root, process.argv.slice(2).find(arg => !arg.startsWith("--")) ??
   (pwa ? "dist/pwa/index.html" : web ? "dist/web/index.html" : version ? "dist/windows/index.html" : "dist/research-directory-sampling-trial.html"));
-assert(!(pwa || web) || output.endsWith("/index.html"), "Укажите путь к index.html");
+assert(!(pwa || web) || basename(output) === "index.html", "Укажите путь к index.html");
 const template = await read("src/index.template.html");
 const app = await read("src/app.js");
 const styles = await read("src/styles.css");

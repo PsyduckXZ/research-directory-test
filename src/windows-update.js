@@ -25,7 +25,7 @@ function setupWindowsUpdates(currentRelease, releaseUrl) {
       const response = await fetch(releaseUrl, { cache: "no-store", signal: AbortSignal.timeout(10000) });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const latest = await response.json();
-      if (!Number.isSafeInteger(latest.release) || !/^\d+\.\d+\.\d+(?:-test)?$/.test(latest.version) ||
+      if (!Number.isSafeInteger(latest.release) || !/^\d+\.\d+(?:\.\d+)?(?:-test)?$/.test(latest.version) ||
           !/^research-directory-[\d.]+(?:-test)?\.html$/.test(latest.file) ||
           !/^[a-f0-9]{64}$/.test(latest.sha256)) {
         throw new Error("Неизвестный формат версии");
