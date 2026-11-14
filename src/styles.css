@@ -494,7 +494,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
   vertical-align: top;
 }
 .application-table td:last-child { width: 1%; }
-.application-table td button { display: block; font-size: .78rem; }
+.application-table td button {
+  display: block;
+  font-size: .78rem;
+  white-space: nowrap;
+}
 .application-table td button + button { margin-top: 4px; }
 .application-warning,
 #application-editor-status { color: var(--amber); }
