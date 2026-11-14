@@ -720,6 +720,9 @@ function renderDetail() {
     group.push(indicator);
     groups.set(type, group);
   }
+  const addSample = card.querySelector(".add-application-sample");
+  addSample.hidden = !indicators.length || category.demo;
+  addSample.addEventListener("click", () => openApplicationSample(category));
   renderSamplingPlan(card, groups, category);
   for (const [type, group] of groups) list.append(createStudyGroup(type, group, category));
   card.querySelector(".back").addEventListener("click", () => {
@@ -772,6 +775,7 @@ if (Array.isArray(categories)) {
       if (code === "all") document.querySelector("#result-heading").scrollIntoView({block: "start"});
     });
   }
+  setupApplication();
   updateQuery();
   document.querySelector("#catalog-fallback").remove();
   document.querySelector(".search-panel").hidden = false;

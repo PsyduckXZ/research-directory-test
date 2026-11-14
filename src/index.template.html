@@ -20,6 +20,7 @@
       <div class="masthead-tools">
         <span class="version">@@VERSION@@</span>
 @@UPDATEBUTTON@@
+        <button type="button" id="open-application" class="update-button" hidden>Перечень для заявления</button>
       </div>
 @@UPDATESTATUS@@
     </div>
@@ -68,6 +69,41 @@
     </div>
   </main>
 
+  <dialog id="application-dialog" aria-labelledby="application-title">
+    <div class="application-heading">
+      <h2 id="application-title">Перечень исследований для заявления</h2>
+      <form method="dialog"><button type="submit" autofocus>Закрыть</button></form>
+    </div>
+    <div id="application-overview">
+      <p id="application-empty">Откройте карточку продукции и нажмите «Добавить пробу в заявление».</p>
+      <div id="application-preview" hidden>
+        <p id="application-warning" class="application-warning" hidden>Черновик. В перечне есть пункты, которые нужно уточнить.</p>
+        <table class="application-table">
+          <thead><tr><th scope="col">№</th><th scope="col">Наименование</th><th scope="col">Количество</th><th scope="col"><span class="sr-only">Действия</span></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="application-actions">
+          <button type="button" id="copy-application">Скопировать перечень</button>
+          <span id="application-copy-status" role="status"></span>
+        </div>
+        <label id="application-copy-fallback" hidden>Перечень для ручного копирования<textarea rows="5" readonly></textarea></label>
+      </div>
+    </div>
+    <form id="application-editor" hidden>
+      <p id="application-category"></p>
+      <div class="application-fields">
+        <label>Рабочее название пробы<input name="sampleName" required></label>
+        <label>Количество<input name="quantity" placeholder="Например, 1 образец 2 раза в год" required></label>
+      </div>
+      <div id="application-studies"></div>
+      <p id="application-editor-status" role="alert"></p>
+      <div class="application-actions">
+        <button type="submit">Сохранить пробу</button>
+        <button type="button" id="cancel-application-edit">Отмена</button>
+      </div>
+    </form>
+  </dialog>
+
   <template id="result-template">
     <button class="result" type="button">
       <span class="result-meta"><span class="code"></span><span class="exact" hidden>Точный код</span><span class="demo-tag" hidden>Демо</span></span>
@@ -90,6 +126,8 @@
           <div><dt>Условия применения</dt><dd class="conditions"></dd></div>
         </dl>
       </details>
+
+      <button class="add-application-sample" type="button" hidden>Добавить пробу в заявление</button>
 
       <section class="sampling-plan" aria-labelledby="sampling-plan-title" hidden>
         <h3 id="sampling-plan-title">Отбор проб · пробная версия</h3>
