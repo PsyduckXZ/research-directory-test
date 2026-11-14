@@ -64,7 +64,9 @@ export function renderFallback(categories, labels) {
   const { groupTitles } = labels;
   const paths = categories.map(({ code }) => {
     const parts = code?.split(".") ?? [];
-    return parts.map((_, index) => parts.slice(0, index + 1).join("."));
+    const prefixes = parts.map((_, index) => parts.slice(0, index + 1).join("."));
+    // Раздел 9.16 показываем на верхнем уровне каталога.
+    return prefixes[1] === "9.16" ? prefixes.slice(1) : prefixes;
   });
   const branchCodes = new Set([...Object.keys(groupTitles), ...paths.flatMap(path => path.slice(0, -1))]);
   const tree = [];
