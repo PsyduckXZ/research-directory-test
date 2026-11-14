@@ -396,3 +396,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
     margin-top: 8px;
   }
 }
+
+.indicator .indicator-sampling-mass {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: .875rem;
+}

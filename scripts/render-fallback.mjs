@@ -73,7 +73,9 @@ export function renderFallback(categories, labels) {
   for (const [index, card] of categories.entries()) {
     const path = paths[index];
     const parentPath = branchCodes.has(path.at(-1)) ? [...path] : path.slice(0, -1);
-    if (card.catalogSubgroup || !path.length) parentPath.push(card.catalogSubgroup ?? "water");
+    if (card.catalogSubgroup !== "centralized-water" && (card.catalogSubgroup || !path.length)) {
+      parentPath.push(card.catalogSubgroup ?? "water");
+    }
     let children = tree;
     for (const code of parentPath) {
       if (!branches.has(code)) {

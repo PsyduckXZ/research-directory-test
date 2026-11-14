@@ -200,7 +200,7 @@ function createCatalog(matches) {
   for (const [index, match] of matches.entries()) {
     const path = paths[index];
     const branches = branchCodes.has(path.at(-1)) ? path : path.slice(0, -1);
-    if (match.category.catalogSubgroup || !path.length) {
+    if (match.category.catalogSubgroup !== "centralized-water" && (match.category.catalogSubgroup || !path.length)) {
       branches.push(match.category.catalogSubgroup ?? "water");
     }
     let parent = tree;
@@ -432,6 +432,13 @@ function createStudyGroup(type, indicators, category) {
     field(article, "h4", indicator.name);
     field(article, ".limit", indicator.limit);
     renderPrice(article, indicator);
+    const quantity = indicatorSamplingQuantity(indicator);
+    if (quantity) {
+      const note = document.createElement("p");
+      note.className = "indicator-sampling-mass";
+      note.textContent = "Масса для лаборатории: " + quantity;
+      article.append(note);
+    }
     article.querySelector(".copy").addEventListener("click", () => copyIndicator(indicator, category, article));
     rows.append(article);
   }
@@ -441,6 +448,42 @@ function createStudyGroup(type, indicators, category) {
 
 const samplingSelections = new WeakMap();
 const samplingMassUnknown = "Массу или объём уточнить в лаборатории.";
+
+const laboratoryMassBasis = "Рабочая масса для передачи в лабораторию по практике приёма проб в лаборатории.";
+const chemistryIndicatorGrams = 200;
+const sensorySampleGrams = 300;
+const glazeSample = ["3,0 кг", "или 3 целые рыбы с головой"];
+
+function chemistryMeasurements(indicator) {
+  const name = normalize(indicator.name);
+  if (name.startsWith("левомицетин")) return ["chloramphenicol"];
+  if (/^(?:антибиотики тетрациклиновой группы|тетрациклиновая группа)/.test(name)) return ["tetracyclines"];
+  if (name.startsWith("бензойная кислота")) return ["benzoic"];
+  if (name.startsWith("сорбиновая кислота")) return ["sorbic"];
+  if (name.startsWith("сумма бензойной и сорбиновой кислот")) return ["benzoic", "sorbic"];
+  return [];
+}
+
+function isGlazeIndicator(indicator) {
+  return indicator.type === "Физико-химическое" && normalize(indicator.name) === "массовая доля глазури";
+}
+
+function indicatorSamplingQuantity(indicator) {
+  if (isGlazeIndicator(indicator)) return glazeSample.join(" ");
+  if (indicator.type !== "Санитарно-химическое") return "";
+  const measurements = chemistryMeasurements(indicator);
+  if (measurements.length === 2) return "расчёт по двум кислотам, без дополнительной массы";
+  return measurements.length ? chemistryIndicatorGrams + " г" : "";
+}
+
+function selectedChemistryQuantity(indicators, code) {
+  const measurements = indicators.map(chemistryMeasurements);
+  const count = new Set(measurements.flat()).size;
+  if (!count) return samplingQuantity(code, "chemistry");
+  const total = count * chemistryIndicatorGrams + " г";
+  return measurements.some(items => !items.length) ? [total + " на показатели с заданной массой", "На остальные — уточнить"] : [total];
+}
+
 
 const category9ChemistryMass = new Map([
   ...["1.1", "1.2.2", "2.1", "2.2.2", "3", "4.1", "4.2.2"].map(code => [code, "2 порции, суммарно не менее 200 г"]),
@@ -536,7 +579,8 @@ function samplingReferences(indicators, category, showNames) {
 function renderSamplingPlan(card, groups, category) {
   const microbiology = groups.get("Микробиологическое") ?? [];
   const chemistry = groups.get("Санитарно-химическое") ?? [];
-  if (!microbiology.length && !chemistry.length) return;
+  const sensory = groups.get("Органолептическое") ?? [];
+  const glaze = (groups.get("Физико-химическое") ?? []).filter(isGlazeIndicator);
 
   const plan = card.querySelector(".sampling-plan");
   const rows = plan.querySelector(".sampling-plan-rows");
@@ -555,6 +599,23 @@ function renderSamplingPlan(card, groups, category) {
     row.append(title, amount);
     rows.append(row);
   }
+
+  function appendFixedQuantity(name, quantity, indicators) {
+    const row = document.createElement("tr");
+    const title = document.createElement("th");
+    const amount = document.createElement("td");
+    title.scope = "row";
+    title.textContent = name;
+    amount.className = "sampling-amount";
+    showSamplingQuantity(amount, quantity);
+    title.append(samplingDetails(laboratoryMassBasis, samplingReferences(indicators, category, false)));
+    row.append(title, amount);
+    rows.append(row);
+  }
+
+  if (glaze.length) appendFixedQuantity("Массовая доля глазури", glazeSample, glaze);
+  appendFixedQuantity(sensory.length ? "Органолептика" : "Органолептика (при назначении)",
+    [sensorySampleGrams + " г на все органолептические показатели"], sensory);
 
   if (!chemistry.length) return;
 
@@ -578,12 +639,21 @@ function renderSamplingPlan(card, groups, category) {
     const selected = chemistry.filter(indicator => chosen.has(indicator));
     count.textContent = "Выбрано " + selected.length + " из " + chemistry.length;
     toggle.textContent = selected.length ? "Изменить выбор" : "Выбрать показатели";
-    showSamplingQuantity(amount, selected.length ? samplingQuantity(category.code, "chemistry") : ["—"]);
+    showSamplingQuantity(amount, selected.length ? selectedChemistryQuantity(selected, category.code) : ["—"]);
     references.replaceChildren();
-    if (selected.length) references.append(samplingDetails(
-      category9SamplingAmount(category.code, "chemistry") || samplingMassUnknown,
-      samplingReferences(selected, category, true)));
+    if (!selected.length) return;
 
+    const notes = [];
+    if (selected.some(indicator => chemistryMeasurements(indicator).length)) {
+      notes.push(laboratoryMassBasis + " По 200 г на каждое определение.");
+      if (selected.some(indicator => chemistryMeasurements(indicator).length === 2)) {
+        notes.push("Сумма кислот рассчитывается по результатам двух определений без дополнительной массы.");
+      }
+    }
+    if (selected.some(indicator => !chemistryMeasurements(indicator).length)) {
+      notes.push(category9SamplingAmount(category.code, "chemistry") || samplingMassUnknown);
+    }
+    references.append(samplingDetails(notes.join(" "), samplingReferences(selected, category, true)));
   }
 
   for (const indicator of chemistry) {
