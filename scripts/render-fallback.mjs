@@ -14,7 +14,7 @@ function renderIndicator(indicator) {
   return "<li><strong>" + escape(name) + "</strong><br>" + escape(limit) + priceHtml + "</li>";
 }
 
-function renderStudy(type, indicators, category, studyLabels) {
+function renderStudy(type, indicators, category, { studyLabels, preparationLabels }) {
   const byReference = new Map();
   for (const indicator of indicators) {
     const basis = indicator.basis.trim();
@@ -30,8 +30,11 @@ function renderStudy(type, indicators, category, studyLabels) {
       escape(sampling || "Нет данных") + "</p><ul>" + rows.map(renderIndicator).join("") + "</ul></div>";
   }).join("");
   const preparations = new Set(indicators.map(indicator => indicator.price?.preparation).filter(Boolean));
-  const preparationHtml = [...preparations].map(preparation => '<p class="study-preparation">Пробоподготовка · ' +
-    escape(preparation) + "</p>").join("");
+  const preparationHtml = [...preparations].map(preparation => {
+    const label = preparationLabels[preparation];
+    return '<p class="study-preparation">Пробоподготовка' + (label ? " " + escape(label) : "") +
+      " · " + escape(preparation) + "</p>";
+  }).join("");
   const priceNotes = new Set(indicators.filter(({ price }) => price?.code === "Уточнить" || price?.code === "р. 8, п. 50")
     .map(({ price }) => price.note).filter(Boolean));
   const priceNotesHtml = [...priceNotes].map(note => '<p class="study-preparation">' + escape(note) + "</p>").join("");
@@ -43,21 +46,22 @@ function renderStudy(type, indicators, category, studyLabels) {
     groupedPriceHtml + references + preparationHtml + priceNotesHtml + "</details>";
 }
 
-function renderCard(card, studyLabels) {
+function renderCard(card, labels) {
   const badge = card.code ? '<span class="code">' + escape(card.code) + "</span> " : "";
   const groups = new Map();
   for (const indicator of card.indicators) {
     if (!groups.has(indicator.type)) groups.set(indicator.type, []);
     groups.get(indicator.type).push(indicator);
   }
-  const studies = [...groups].map(([type, rows]) => renderStudy(type, rows, card, studyLabels)).join("") ||
+  const studies = [...groups].map(([type, rows]) => renderStudy(type, rows, card, labels)).join("") ||
     "<p>Показатели пока не внесены.</p>";
   return '<details class="catalog-branch"><summary>' + badge + escape(card.title) +
     '</summary><div class="fallback-card"><p><strong>Условия применения</strong> ' +
     escape(card.conditions) + "</p>" + studies + "</div></details>";
 }
 
-export function renderFallback(categories, { groupTitles, studyLabels }) {
+export function renderFallback(categories, labels) {
+  const { groupTitles } = labels;
   const paths = categories.map(({ code }) => {
     const parts = code?.split(".") ?? [];
     return parts.map((_, index) => parts.slice(0, index + 1).join("."));
@@ -83,7 +87,7 @@ export function renderFallback(categories, { groupTitles, studyLabels }) {
   }
 
   function renderNode(node) {
-    if (node.card) return renderCard(node.card, studyLabels);
+    if (node.card) return renderCard(node.card, labels);
     const label = !/^\d/.test(node.code) ? escape(groupTitles[node.code]) :
       '<span class="code">' + escape(node.code.split("/")[0]) + "</span>" +
       (groupTitles[node.code] ? " " + escape(groupTitles[node.code]) : "");

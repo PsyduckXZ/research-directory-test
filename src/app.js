@@ -411,7 +411,8 @@ function createStudyGroup(type, indicators, category) {
   for (const preparation of preparations) {
     const note = document.createElement("p");
     note.className = "study-preparation";
-    note.textContent = "Пробоподготовка · " + preparation;
+    const label = preparationLabels[preparation];
+    note.textContent = "Пробоподготовка" + (label ? " " + label : "") + " · " + preparation;
     mappings.append(note);
   }
 

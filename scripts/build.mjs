@@ -85,7 +85,7 @@ for (const file of entries) {
 
 const identities = categories.map(({ code, title }) => JSON.stringify([code, title]));
 assert.equal(new Set(identities).size, categories.length, "Повторяется сочетание кода и названия карточки");
-const labelScript = "const groupTitles = " + stringify(labels.groupTitles) + ";\nconst studyLabels = " + stringify(labels.studyLabels) + ";";
+const labelScript = "const groupTitles = " + stringify(labels.groupTitles) + ";\nconst studyLabels = " + stringify(labels.studyLabels) + ";\nconst preparationLabels = " + stringify(labels.preparationLabels) + ";";
 const catalogFiles = entries.map(name => "data/" + name);
 const offlineStatus = pwa ? '<p id="offline-status" class="offline-status" role="status">Готовим каталог для работы без интернета…</p>' : "";
 const updateControls = version ? `<div class="update-panel">
