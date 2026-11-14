@@ -95,7 +95,7 @@ export function renderFallback(categories, labels) {
     const label = !/^\d/.test(node.code) ? escape(groupTitles[node.code]) :
       '<span class="code">' + escape(node.code.split("/")[0]) + "</span>" +
       (groupTitles[node.code] ? " " + escape(groupTitles[node.code]) : "");
-    return '<details class="catalog-branch"><summary>' + label + '</summary><div class="catalog-children">' +
+    return '<details class="catalog-branch" data-catalog-code="' + escape(node.code) + '"><summary>' + label + '</summary><div class="catalog-children">' +
       node.children.map(renderNode).join("") + "</div></details>";
   }
   return '<div class="catalog-tree">' + tree.map(renderNode).join("") + "</div>";

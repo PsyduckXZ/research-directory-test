@@ -210,6 +210,7 @@ function createCatalog(matches) {
       if (!groups.has(code)) {
         const branch = document.createElement("details");
         branch.className = "catalog-branch";
+        branch.dataset.catalogCode = code;
         const label = document.createElement("summary");
         if (!/^\d/.test(code)) {
           label.textContent = groupTitles[code];

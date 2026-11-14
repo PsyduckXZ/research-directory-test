@@ -240,6 +240,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 .catalog-children { padding-left: 10px; }
 .code { font-size: .75rem; font-weight: 500; color: #697b80; background: #eef2f3; padding: 2px 5px; }
 .catalog-branch > summary .code { background: transparent; padding-left: 0; }
+.catalog-branch[data-catalog-code="9.16"] .code { font-family: inherit; }
 .result { border: 0; border-radius: 7px; padding: 12px 30px 12px 10px; background: transparent; }
 .result:hover { background: #edf1f1; }
 .result[aria-pressed="true"] { border: 0; background: #e6eeed; box-shadow: inset 2px 0 var(--accent); }
