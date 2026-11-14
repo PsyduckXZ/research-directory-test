@@ -9,7 +9,7 @@ function samplingText(indicator, category) {
 
 function renderIndicator(indicator) {
   const { name, limit, price } = indicator;
-  const priceHtml = price ? '<br><span class="fallback-price" title="' + escape([price.note, price.preparation && "Пробоподготовка " + price.preparation].filter(Boolean).join(" · ")) +
+  const priceHtml = price && !price.grouped ? '<br><span class="fallback-price" title="' + escape([price.note, price.preparation && "Пробоподготовка " + price.preparation].filter(Boolean).join(" · ")) +
     '">Прейскурант · ' + escape(price.code) + "</span>" : "";
   return "<li><strong>" + escape(name) + "</strong><br>" + escape(limit) + priceHtml + "</li>";
 }
@@ -35,8 +35,12 @@ function renderStudy(type, indicators, category, studyLabels) {
   const priceNotes = new Set(indicators.filter(({ price }) => price?.code === "Уточнить" || price?.code === "р. 8, п. 50")
     .map(({ price }) => price.note).filter(Boolean));
   const priceNotesHtml = [...priceNotes].map(note => '<p class="study-preparation">' + escape(note) + "</p>").join("");
+  const groupedPrices = new Set(indicators.filter(({ price }) => price?.grouped)
+    .map(({ price }) => price.code));
+  const groupedPriceHtml = [...groupedPrices].map(code => '<p class="study-preparation">Прейскурант · ' +
+    escape(code) + " (один раз на всю группу)</p>").join("");
   return '<details class="fallback-study"><summary>' + escape(studyLabels[type]) + "</summary>" +
-    references + preparationHtml + priceNotesHtml + "</details>";
+    groupedPriceHtml + references + preparationHtml + priceNotesHtml + "</details>";
 }
 
 function renderCard(card, studyLabels) {

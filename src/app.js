@@ -291,7 +291,8 @@ async function copyIndicator(indicator, category, article) {
     (indicator.type?.trim() || missing) + " · " + (indicator.name?.trim() || missing),
     "Норматив: " + (indicator.limit?.trim() || missing),
     "Основание: " + (indicator.basis?.trim() || missing),
-    indicator.price ? "Прейскурант: " + indicator.price.code : "",
+    indicator.price ? "Прейскурант: " + indicator.price.code +
+      (indicator.price.grouped ? " (один раз на всю группу)" : "") : "",
     sampling ? "Отбор проб: " + sampling : ""
   ];
   const value = parts.filter(Boolean).join("\n");
@@ -370,7 +371,7 @@ function groupReferences(group, selector, label, indicators, getReference, forma
 }
 
 function renderPrice(article, indicator) {
-  if (!indicator.price) return;
+  if (!indicator.price || indicator.price.grouped) return;
   article.classList.add('has-price');
   const cell = article.querySelector('.price-code');
   cell.hidden = false;
@@ -395,12 +396,22 @@ function createStudyGroup(type, indicators, category) {
   groupReferences(group, ".study-sampling", "Отбор проб", indicators,
     indicator => samplingForIndicator(indicator, category), compactSampling, "Не указан");
 
+  const mappings = group.querySelector(".study-mappings");
+  const groupedPrices = new Set(indicators.filter(({ price }) => price?.grouped)
+    .map(({ price }) => price.code));
+  for (const code of groupedPrices) {
+    const note = document.createElement("p");
+    note.className = "study-preparation";
+    note.textContent = "Прейскурант · " + code + " (один раз на всю группу)";
+    mappings.append(note);
+  }
+
   const preparations = new Set(indicators.map(indicator => indicator.price?.preparation).filter(Boolean));
   for (const preparation of preparations) {
     const note = document.createElement("p");
     note.className = "study-preparation";
     note.textContent = "Пробоподготовка · " + preparation;
-    group.querySelector(".study-mappings").append(note);
+    mappings.append(note);
   }
 
   const priceNotes = new Set(indicators.filter(({ price }) => price?.code === "Уточнить" || price?.code === "р. 8, п. 50")
@@ -409,7 +420,7 @@ function createStudyGroup(type, indicators, category) {
     const note = document.createElement("p");
     note.className = "study-preparation";
     note.textContent = text;
-    group.querySelector(".study-mappings").append(note);
+    mappings.append(note);
   }
 
   const rows = group.querySelector(".study-rows");

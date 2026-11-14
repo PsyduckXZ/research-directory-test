@@ -76,6 +76,7 @@ for (const file of entries) {
         for (const field of ["note", "preparation"]) {
           assert(price[field] === undefined || typeof price[field] === "string", where + ": неверное поле " + field);
         }
+        assert(price.grouped === undefined || typeof price.grouped === "boolean", where + ": неверное поле grouped");
       }
     }
     categories.push(card);
