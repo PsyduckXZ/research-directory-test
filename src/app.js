@@ -200,7 +200,7 @@ function createCatalog(matches) {
   for (const [index, match] of matches.entries()) {
     const path = paths[index];
     const branches = branchCodes.has(path.at(-1)) ? path : path.slice(0, -1);
-    if (match.category.catalogSubgroup || !path.length) {
+    if (match.category.catalogSubgroup !== "centralized-water" && (match.category.catalogSubgroup || !path.length)) {
       branches.push(match.category.catalogSubgroup ?? "water");
     }
     let parent = tree;
