@@ -410,3 +410,93 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
   color: var(--muted);
   font-size: .875rem;
 }
+
+#application-dialog {
+  width: min(760px, calc(100% - 24px));
+  max-height: 88vh;
+  padding: clamp(14px, 3vw, 26px);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+#application-dialog::backdrop { background: #18294455; }
+#application-dialog button,
+.add-application-sample {
+  min-height: 38px;
+  padding: 6px 12px;
+  color: var(--accent);
+  background: var(--blue-wash);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.add-application-sample { margin: 14px 0; }
+
+.application-heading,
+.application-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.application-heading { justify-content: space-between; }
+.application-heading h2 { margin: 0; font-size: clamp(1.12rem, 3vw, 1.42rem); }
+.application-actions { margin-top: 14px; }
+
+.application-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 12px;
+}
+#application-dialog input:not([type="checkbox"]),
+#application-dialog textarea {
+  display: block;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: inherit;
+  background: var(--paper);
+}
+
+#application-studies fieldset {
+  margin: 14px 0;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+#application-studies label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 3px 8px;
+  padding: 5px 0;
+  cursor: pointer;
+}
+#application-studies input { margin: .35em 0 0; accent-color: var(--accent); }
+#application-studies small { grid-column: 2; color: var(--muted); }
+
+.application-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+  font-size: .88rem;
+  line-height: 1.35;
+}
+.application-table th,
+.application-table td {
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+.application-table td:last-child { width: 1%; }
+.application-table td button { display: block; font-size: .78rem; }
+.application-table td button + button { margin-top: 4px; }
+.application-warning,
+#application-editor-status { color: var(--amber); }
+.application-table small { display: block; margin-top: 6px; }
+#application-editor-status:empty { display: none; }
+#application-copy-fallback { display: block; margin-top: 10px; }

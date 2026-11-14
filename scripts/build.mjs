@@ -28,7 +28,7 @@ const output = resolve(root, process.argv.slice(2).find(arg => !arg.startsWith("
   (pwa ? "dist/pwa/index.html" : web ? "dist/web/index.html" : version ? "dist/windows/index.html" : "dist/research-directory-sampling-trial.html"));
 assert(!(pwa || web) || basename(output) === "index.html", "Укажите путь к index.html");
 const template = await read("src/index.template.html");
-const app = await read("src/app.js");
+const app = (await read("src/application.js")) + "\n" + (await read("src/app.js"));
 const styles = await read("src/styles.css");
 const labels = JSON.parse(await read("data/labels.json"));
 const catalogDir = resolve(root, "data/categories");
