@@ -189,7 +189,9 @@ function createCatalog(matches) {
   // A branch may have cards of its own, for example the two chemistry cards at 7.2.
   const paths = matches.map(({ category }) => {
     const parts = category.code?.split(".") ?? [];
-    return parts.map((_, index) => parts.slice(0, index + 1).join("."));
+    const prefixes = parts.map((_, index) => parts.slice(0, index + 1).join("."));
+    // Раздел 9.16 показываем на верхнем уровне каталога.
+    return prefixes[1] === "9.16" ? prefixes.slice(1) : prefixes;
   });
   const branchCodes = new Set([
     ...Object.keys(groupTitles),
