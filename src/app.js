@@ -200,16 +200,17 @@ function createCatalog(matches) {
   for (const [index, match] of matches.entries()) {
     const path = paths[index];
     const branches = branchCodes.has(path.at(-1)) ? path : path.slice(0, -1);
-    if (match.category.catalogSubgroup) branches.push(match.category.catalogSubgroup);
-    if (!path.length) branches.push("water");
+    if (match.category.catalogSubgroup || !path.length) {
+      branches.push(match.category.catalogSubgroup ?? "water");
+    }
     let parent = tree;
     for (const code of branches) {
       if (!groups.has(code)) {
         const branch = document.createElement("details");
         branch.className = "catalog-branch";
         const label = document.createElement("summary");
-        if (code === "water") {
-          label.textContent = "Питьевая вода";
+        if (!/^\d/.test(code)) {
+          label.textContent = groupTitles[code];
         } else {
           const badge = document.createElement("span");
           badge.className = "code";
