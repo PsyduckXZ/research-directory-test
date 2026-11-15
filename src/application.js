@@ -170,6 +170,27 @@ function showApplicationOverview() {
   applicationDialog.scrollTop = 0;
 }
 
+async function writeApplicationClipboard(cells, text) {
+  if (typeof ClipboardItem === "function" && navigator.clipboard?.write) {
+    const table = document.createElement("table");
+    const body = table.createTBody();
+    for (const cellsInRow of cells) {
+      const row = body.insertRow();
+      for (const value of cellsInRow) row.insertCell().textContent = value;
+    }
+    try {
+      await navigator.clipboard.write([new ClipboardItem({
+        "text/html": new Blob([table.outerHTML], { type: "text/html" }),
+        "text/plain": new Blob([text], { type: "text/plain" })
+      })]);
+      return;
+    } catch {
+      // Try plain text if the browser blocks formatted clipboard access.
+    }
+  }
+  await navigator.clipboard.writeText(text);
+}
+
 function setupApplication() {
   applicationTrigger.hidden = false;
   applicationTrigger.addEventListener("click", showApplicationOverview);
@@ -197,13 +218,12 @@ function setupApplication() {
       uncertainties.length ? name + " [Черновик — уточнить пункты: " + uncertainties.join("; ") + "]" : name,
       quantity
     ]);
-    const value = [["№", "Наименование", "Количество"], ...rows]
-      .map(row => row.map(cell => String(cell).replace(/[\t\r\n]+/g, " ")).join("\t"))
-      .join("\n");
+    const cells = rows.map(row => row.map(cell => String(cell).replace(/[\t\r\n]+/g, " ")));
+    const value = cells.map(row => row.join("\t")).join("\n");
     const fallback = applicationOverview.querySelector("#application-copy-fallback");
     const status = applicationOverview.querySelector("#application-copy-status");
     try {
-      await navigator.clipboard.writeText(value);
+      await writeApplicationClipboard(cells, value);
       fallback.hidden = true;
       status.textContent = "Перечень скопирован.";
     } catch {
