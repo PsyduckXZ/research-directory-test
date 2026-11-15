@@ -1,6 +1,14 @@
 name: Publish research directory
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'pages/**'
+      - '.github/workflows/pages.yml'
   workflow_dispatch:
 
 permissions:
