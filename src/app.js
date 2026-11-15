@@ -202,7 +202,7 @@ function createCatalog(matches) {
   for (const [index, match] of matches.entries()) {
     const path = paths[index];
     const branches = branchCodes.has(path.at(-1)) ? path : path.slice(0, -1);
-    if (match.category.catalogSubgroup !== "centralized-water" && (match.category.catalogSubgroup || !path.length)) {
+    if (!["centralized-water", "workplace"].includes(match.category.catalogSubgroup) && (match.category.catalogSubgroup || !path.length)) {
       branches.push(match.category.catalogSubgroup ?? "water");
     }
     let parent = tree;
@@ -294,7 +294,7 @@ async function copyIndicator(indicator, category, article) {
     category.demo ? "ДЕМОНСТРАЦИОННЫЕ ДАННЫЕ" : "",
     [category.code, category.title].filter(Boolean).join(" — "),
     (indicator.type?.trim() || missing) + " · " + (indicator.name?.trim() || missing),
-    workplace ? category.conditions : "Норматив: " + (indicator.limit?.trim() || missing),
+    workplace ? indicator.price?.note : "Норматив: " + (indicator.limit?.trim() || missing),
     workplace ? "" : "Основание: " + (indicator.basis?.trim() || missing),
     indicator.price ? "Прейскурант: " + indicator.price.code +
       (indicator.price.grouped ? " (один раз на всю группу)" : "") : "",
@@ -439,8 +439,9 @@ function createStudyGroup(type, indicators, category) {
     const article = cloneTemplate("#indicator-template");
     article.classList.toggle("matched-indicator", selectedIndicators.has(indicator));
     field(article, "h4", indicator.name);
-    if (workplace) article.querySelector(".limit").hidden = true;
-    else field(article, ".limit", indicator.limit);
+    const limit = workplace ? indicator.price?.note : indicator.limit;
+    field(article, ".limit", limit);
+    article.querySelector(".limit").hidden = workplace && !limit;
     renderPrice(article, indicator);
     const quantity = indicatorSamplingQuantity(indicator);
     if (quantity) {
@@ -733,7 +734,7 @@ function renderDetail() {
   addSample.hidden = !indicators.length || category.demo;
   addSample.addEventListener("click", () => openApplicationSample(category));
   if (workplace) {
-    addSample.textContent = "Добавить измерение в заявление";
+    addSample.textContent = "Добавить измерения в заявление";
     card.querySelector(".sampling-note").hidden = true;
     card.querySelector(".detail-notes").open = true;
   } else {

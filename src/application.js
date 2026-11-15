@@ -75,13 +75,12 @@ function openApplicationSample(category, sample = null) {
   applicationEdit = { category, sample };
   const workplace = category.catalogSubgroup === "workplace";
   applicationEditor.querySelector("#application-name-label").textContent =
-    workplace ? "Название измерения" : "Рабочее название пробы";
+    workplace ? "Название измерений" : "Рабочее название пробы";
   applicationEditor.querySelector('button[type="submit"]').textContent =
-    workplace ? "Сохранить измерение" : "Сохранить пробу";
+    workplace ? "Сохранить измерения" : "Сохранить пробу";
   applicationEditor.elements.quantity.placeholder =
     workplace ? "Число точек или рабочих мест и периодичность" : "Например, 1 образец 2 раза в год";
-  applicationEditor.elements.sampleName.value = sample?.name ??
-    (workplace ? "Инструментальные измерения: " + category.title.toLocaleLowerCase("ru") : category.title);
+  applicationEditor.elements.sampleName.value = sample?.name ?? category.title;
   applicationEditor.elements.quantity.value = sample?.quantity ?? "";
   applicationEditor.querySelector("#application-category").textContent =
     [category.code, category.title].filter(Boolean).join(" · ");
