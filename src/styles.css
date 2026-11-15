@@ -347,12 +347,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
   padding-block: 10px;
 }
 
+.masthead-inner > .version { margin-inline-start: auto; }
+
 .masthead-tools {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px 14px;
-  margin-inline-start: auto;
 }
 
 .update-button,
@@ -369,7 +370,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
   cursor: pointer;
 }
 
-.masthead-tools [hidden],
+.masthead-tools:not(:has(button:not([hidden]))),
 .update-panel [hidden] {
   display: none;
 }
@@ -398,11 +399,32 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 }
 
 @media (max-width: 560px) {
+  .masthead-inner { column-gap: 8px; }
+  .masthead-inner > .brand { flex: 1; min-width: 0; }
+
   .masthead-tools,
   .update-panel {
     flex-basis: 100%;
     justify-content: flex-start;
     margin-top: 8px;
+  }
+
+  .masthead-tools {
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .masthead-tools button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    padding-inline: 6px;
+    line-height: 1.25;
+  }
+
+  .masthead-tools:not(:has(button:not([hidden]) ~ button:not([hidden]))) button {
+    flex: 0 1 auto;
   }
 }
 
