@@ -49,7 +49,9 @@ for (const file of entries) {
     const at = file + ", карточка " + (index + 1);
     assert(card && typeof card === "object", at + ": ожидается объект");
     assert(card.code === null || (typeof card.code === "string" && /^\d+(?:\.\d+)*$/.test(card.code)), at + ": неверный код");
-    assert.equal(card.code?.split(".")[0].padStart(2, "0") ?? "water", section, at + ": неверный раздел");
+    const expectedSection = card.code?.split(".")[0].padStart(2, "0") ??
+      (card.catalogSubgroup === "workplace" ? "workplace" : "water");
+    assert.equal(section, expectedSection, at + ": неверный раздел");
     assert(typeof card.title === "string" && card.title.trim(), at + ": нет названия");
     assert(Array.isArray(card.synonyms) && card.synonyms.every(v => typeof v === "string"), at + ": неверные синонимы");
     assert(typeof card.conditions === "string" && typeof card.demo === "boolean", at + ": неверные условия или признак демо");

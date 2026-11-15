@@ -11,7 +11,7 @@ function renderIndicator(indicator) {
   const { name, limit, price } = indicator;
   const priceHtml = price && !price.grouped ? '<br><span class="fallback-price" title="' + escape([price.note, price.preparation && "Пробоподготовка " + price.preparation].filter(Boolean).join(" · ")) +
     '">Прейскурант · ' + escape(price.code) + "</span>" : "";
-  return "<li><strong>" + escape(name) + "</strong><br>" + escape(limit) + priceHtml + "</li>";
+  return "<li><strong>" + escape(name) + "</strong>" + (limit ? "<br>" + escape(limit) : "") + priceHtml + "</li>";
 }
 
 function renderStudy(type, indicators, category, { studyLabels, preparationLabels }) {
@@ -25,6 +25,7 @@ function renderStudy(type, indicators, category, { studyLabels, preparationLabel
   }
   const references = [...byReference].map(([key, rows]) => {
     const [basis, sampling] = JSON.parse(key);
+    if (category.catalogSubgroup === "workplace") return "<ul>" + rows.map(renderIndicator).join("") + "</ul>";
     return '<div class="fallback-reference"><p><strong>Основание</strong> ' +
       escape(basis || "Нет данных") + "</p><p><strong>Отбор проб</strong> " +
       escape(sampling || "Нет данных") + "</p><ul>" + rows.map(renderIndicator).join("") + "</ul></div>";

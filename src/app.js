@@ -155,7 +155,7 @@ function field(container, selector, value) {
 function renderResults() {
   const query = normalize(search.value);
   const matches = findCategories(query);
-  document.querySelector("#result-heading").textContent = query ? "Результаты поиска" : "Каталог продукции";
+  document.querySelector("#result-heading").textContent = query ? "Результаты поиска" : "Каталог исследований";
   count.textContent = matches.length;
   count.setAttribute("aria-label", (query ? "Найдено категорий: " : "Карточек в каталоге: ") + matches.length);
   clear.hidden = search.value === "";
@@ -289,12 +289,13 @@ function compactSampling(value) {
 
 async function copyIndicator(indicator, category, article) {
   const sampling = samplingForIndicator(indicator, category);
+  const workplace = category.catalogSubgroup === "workplace";
   const parts = [
     category.demo ? "ДЕМОНСТРАЦИОННЫЕ ДАННЫЕ" : "",
     [category.code, category.title].filter(Boolean).join(" — "),
     (indicator.type?.trim() || missing) + " · " + (indicator.name?.trim() || missing),
-    "Норматив: " + (indicator.limit?.trim() || missing),
-    "Основание: " + (indicator.basis?.trim() || missing),
+    workplace ? category.conditions : "Норматив: " + (indicator.limit?.trim() || missing),
+    workplace ? "" : "Основание: " + (indicator.basis?.trim() || missing),
     indicator.price ? "Прейскурант: " + indicator.price.code +
       (indicator.price.grouped ? " (один раз на всю группу)" : "") : "",
     sampling ? "Отбор проб: " + sampling : ""
@@ -392,13 +393,18 @@ function renderPrice(article, indicator) {
 
 function createStudyGroup(type, indicators, category) {
   const group = cloneTemplate("#study-group-template");
-  group.open = indicators.some(indicator => selectedIndicators.has(indicator));
+  const workplace = category.catalogSubgroup === "workplace";
+  group.open = workplace || indicators.some(indicator => selectedIndicators.has(indicator));
   field(group, ".study-label", studyLabels[type] ?? type);
   group.querySelector(".count").textContent = indicators.length;
-  groupReferences(group, ".study-basis", "Основания", indicators,
-    indicator => indicator.basis, compactBasis, "Не указано");
-  groupReferences(group, ".study-sampling", "Отбор проб", indicators,
-    indicator => samplingForIndicator(indicator, category), compactSampling, "Не указан");
+  if (workplace) {
+    for (const reference of group.querySelectorAll(".study-reference")) reference.hidden = true;
+  } else {
+    groupReferences(group, ".study-basis", "Основания", indicators,
+      indicator => indicator.basis, compactBasis, "Не указано");
+    groupReferences(group, ".study-sampling", "Отбор проб", indicators,
+      indicator => samplingForIndicator(indicator, category), compactSampling, "Не указан");
+  }
 
   const mappings = group.querySelector(".study-mappings");
   const groupedPrices = new Set(indicators.filter(({ price }) => price?.grouped)
@@ -433,7 +439,8 @@ function createStudyGroup(type, indicators, category) {
     const article = cloneTemplate("#indicator-template");
     article.classList.toggle("matched-indicator", selectedIndicators.has(indicator));
     field(article, "h4", indicator.name);
-    field(article, ".limit", indicator.limit);
+    if (workplace) article.querySelector(".limit").hidden = true;
+    else field(article, ".limit", indicator.limit);
     renderPrice(article, indicator);
     const quantity = indicatorSamplingQuantity(indicator);
     if (quantity) {
@@ -694,6 +701,7 @@ function renderDetail() {
   }
 
   const category = selected;
+  const workplace = category.catalogSubgroup === "workplace";
   const card = cloneTemplate("#detail-template");
   card.querySelector(".detail-meta").hidden = !category.code && !category.demo;
   card.querySelector(".code").hidden = !category.code;
@@ -724,7 +732,13 @@ function renderDetail() {
   const addSample = card.querySelector(".add-application-sample");
   addSample.hidden = !indicators.length || category.demo;
   addSample.addEventListener("click", () => openApplicationSample(category));
-  renderSamplingPlan(card, groups, category);
+  if (workplace) {
+    addSample.textContent = "Добавить измерение в заявление";
+    card.querySelector(".sampling-note").hidden = true;
+    card.querySelector(".detail-notes").open = true;
+  } else {
+    renderSamplingPlan(card, groups, category);
+  }
   for (const [type, group] of groups) list.append(createStudyGroup(type, group, category));
   card.querySelector(".back").addEventListener("click", () => {
     const row = selectedRow;
