@@ -306,8 +306,23 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
   input[type="search"] { font-size: 16px; padding-right: 48px; min-height: 56px; }
   .clear { top: 6px; }
   .search-icon { top: 17px; }
-  .section-picks { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
-  .section-picks button { min-height: 44px; font-size: .78rem; padding: 9px 12px; border: 1px solid var(--line); border-radius: 22px; background: #fff; color: var(--muted); }
+  .section-picks {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .section-picks button {
+    min-height: 38px;
+    padding: 3px 5px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--muted);
+    font-size: .78rem;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
   .section-picks button:hover { background: var(--blue-wash); color: var(--accent); }
   .workspace { display: grid; grid-template-columns: minmax(0, 1fr); margin-top: 30px; gap: 0; }
   .results { min-width: 0; }
