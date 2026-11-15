@@ -769,11 +769,9 @@ if (Array.isArray(categories)) {
       const code = shortcut.dataset.section;
       for (const branch of catalogTree.children) {
         if (branch.tagName !== "DETAILS") continue;
-        const badge = branch.querySelector(":scope > summary .code");
-        branch.open = code !== "all" && badge?.textContent.trim() === code;
+        branch.open = branch.dataset.catalogCode === code;
         if (branch.open) branch.scrollIntoView({block: "start"});
       }
-      if (code === "all") document.querySelector("#result-heading").scrollIntoView({block: "start"});
     });
   }
   setupApplication();
