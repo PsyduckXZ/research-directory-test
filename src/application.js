@@ -78,10 +78,11 @@ function openApplicationSample(category, sample = null) {
     workplace ? "Название измерений" : "Рабочее название пробы";
   applicationEditor.querySelector('button[type="submit"]').textContent =
     workplace ? "Сохранить измерения" : "Сохранить пробу";
-  applicationEditor.elements.quantity.placeholder =
-    workplace ? "Число точек или рабочих мест и периодичность" : "Например, 1 образец 2 раза в год";
+  const quantity = applicationEditor.elements.quantity;
+  quantity.closest("label").hidden = workplace;
+  quantity.disabled = workplace;
   applicationEditor.elements.sampleName.value = sample?.name ?? category.title;
-  applicationEditor.elements.quantity.value = sample?.quantity ?? "";
+  quantity.value = workplace ? "" : sample?.quantity ?? "";
   applicationEditor.querySelector("#application-category").textContent =
     [category.code, category.title].filter(Boolean).join(" · ");
   applicationEditor.querySelector("#application-editor-status").textContent = "";
@@ -93,7 +94,7 @@ function openApplicationSample(category, sample = null) {
     checkbox.type = "checkbox";
     checkbox.name = "study";
     checkbox.value = String(index);
-    checkbox.checked = sample?.indicators.includes(indicator) ?? workplace;
+    checkbox.checked = sample?.indicators.includes(indicator) ?? false;
     label.append(checkbox, document.createTextNode(indicator.name));
     const note = indicator.price?.note;
     if (note) {
@@ -102,7 +103,27 @@ function openApplicationSample(category, sample = null) {
       label.append(description);
     }
     const group = groups.get(indicator.type) ?? [];
-    group.push(label);
+    if (workplace) {
+      const item = document.createElement("div");
+      const amountField = document.createElement("div");
+      const amount = document.createElement("input");
+      amount.type = "text";
+      amount.name = "measurement-" + index;
+      amount.placeholder = "Количество и периодичность";
+      amount.setAttribute("aria-label", "Количество: " + indicator.name);
+      amount.value = sample?.measurementQuantities?.[index] ?? "";
+      const updateAmountField = () => {
+        amountField.hidden = !checkbox.checked;
+        amount.disabled = !checkbox.checked;
+      };
+      checkbox.addEventListener("change", updateAmountField);
+      updateAmountField();
+      amountField.append(amount);
+      item.append(label, amountField);
+      group.push(item);
+    } else {
+      group.push(label);
+    }
     groups.set(indicator.type, group);
   }
 
@@ -125,7 +146,11 @@ function applicationRows() {
   return applicationSamples.map((sample, index) => {
     const { labels, uncertainties } = applicationTariffs(sample.indicators);
     const name = sample.name + (labels.length ? " (" + labels.join(", ") + ")" : "");
-    return { number: index + 1, name, quantity: sample.quantity, uncertainties };
+    const quantity = sample.measurementQuantities
+      ? Object.entries(sample.measurementQuantities).map(([index, amount]) =>
+        sample.category.indicators[index].name + ": " + amount).join("\n")
+      : sample.quantity;
+    return { number: index + 1, name, quantity, uncertainties };
   });
 }
 
@@ -155,7 +180,9 @@ function showApplicationOverview() {
       note.textContent = "Уточнить пункты: " + uncertainties.join("; ");
       nameCell.append(note);
     }
-    row.insertCell().textContent = quantity;
+    const quantityCell = row.insertCell();
+    quantityCell.style.whiteSpace = "pre-line";
+    quantityCell.textContent = quantity;
     const actions = row.insertCell();
     const edit = document.createElement("button");
     const remove = document.createElement("button");
@@ -184,7 +211,13 @@ async function writeApplicationClipboard(cells, text) {
     const body = table.createTBody();
     for (const cellsInRow of cells) {
       const row = body.insertRow();
-      for (const value of cellsInRow) row.insertCell().textContent = value;
+      for (const value of cellsInRow) {
+        const cell = row.insertCell();
+        for (const [index, line] of value.split("\n").entries()) {
+          if (index) cell.append(document.createElement("br"));
+          cell.append(line);
+        }
+      }
     }
     try {
       await navigator.clipboard.write([new ClipboardItem({
@@ -203,19 +236,40 @@ function setupApplication() {
   applicationTrigger.hidden = false;
   applicationTrigger.addEventListener("click", showApplicationOverview);
   document.querySelector("#cancel-application-edit").addEventListener("click", showApplicationOverview);
+  const isBackdrop = event => {
+    const { left, right, top, bottom } = applicationDialog.getBoundingClientRect();
+    return event.target === applicationDialog &&
+      (event.clientX < left || event.clientX >= right || event.clientY < top || event.clientY >= bottom);
+  };
+  let pointerStartedOnBackdrop = false;
+  applicationDialog.addEventListener("pointerdown", event => {
+    pointerStartedOnBackdrop = isBackdrop(event);
+  });
+  applicationDialog.addEventListener("click", event => {
+    if (pointerStartedOnBackdrop && isBackdrop(event)) applicationDialog.close();
+    pointerStartedOnBackdrop = false;
+  });
   applicationEditor.addEventListener("submit", event => {
     event.preventDefault();
     const { category, sample } = applicationEdit;
     const fields = new FormData(applicationEditor);
     const name = fields.get("sampleName").trim();
-    const quantity = fields.get("quantity").trim();
-    const indicators = fields.getAll("study").map(index => category.indicators[index]);
+    const workplace = category.catalogSubgroup === "workplace";
+    const selectedIndices = fields.getAll("study");
+    const indicators = selectedIndices.map(index => category.indicators[index]);
+    const measurementQuantities = workplace
+      ? Object.fromEntries(selectedIndices.map(index => [index, fields.get("measurement-" + index).trim()]))
+      : null;
+    const quantity = fields.get("quantity")?.trim() ?? "";
     const status = applicationEditor.querySelector("#application-editor-status");
-    if (!name || !quantity || !indicators.length) {
-      status.textContent = "Укажите название и количество и выберите хотя бы одно исследование.";
+    const hasQuantity = workplace ? Object.values(measurementQuantities).every(Boolean) : Boolean(quantity);
+    if (!name || !hasQuantity || !indicators.length) {
+      status.textContent = workplace
+        ? "Выберите хотя бы одно измерение и укажите количество для каждого выбранного измерения."
+        : "Укажите название и количество и выберите хотя бы одно исследование.";
       return;
     }
-    const entry = { category, name, quantity, indicators };
+    const entry = { category, name, quantity, indicators, measurementQuantities };
     if (sample) Object.assign(sample, entry);
     else applicationSamples.push(entry);
     showApplicationOverview();
@@ -226,8 +280,8 @@ function setupApplication() {
       uncertainties.length ? name + " [Черновик — уточнить пункты: " + uncertainties.join("; ") + "]" : name,
       quantity
     ]);
-    const cells = rows.map(row => row.map(cell => String(cell).replace(/[\t\r\n]+/g, " ")));
-    const value = cells.map(row => row.join("\t")).join("\n");
+    const cells = rows.map(row => row.map(cell => String(cell).replace(/[\t\r]+/g, " ")));
+    const value = cells.map(row => row.map(cell => cell.replaceAll("\n", " · ")).join("\t")).join("\n");
     const fallback = applicationOverview.querySelector("#application-copy-fallback");
     const status = applicationOverview.querySelector("#application-copy-status");
     try {
