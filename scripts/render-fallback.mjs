@@ -25,7 +25,6 @@ function renderStudy(type, indicators, category, { studyLabels, preparationLabel
   }
   const references = [...byReference].map(([key, rows]) => {
     const [basis, sampling] = JSON.parse(key);
-    if (category.catalogSubgroup === "workplace") return "<ul>" + rows.map(renderIndicator).join("") + "</ul>";
     return '<div class="fallback-reference"><p><strong>Основание</strong> ' +
       escape(basis || "Нет данных") + "</p><p><strong>Отбор проб</strong> " +
       escape(sampling || "Нет данных") + "</p><ul>" + rows.map(renderIndicator).join("") + "</ul></div>";
@@ -54,8 +53,10 @@ function renderCard(card, labels) {
     if (!groups.has(indicator.type)) groups.set(indicator.type, []);
     groups.get(indicator.type).push(indicator);
   }
-  const studies = [...groups].map(([type, rows]) => renderStudy(type, rows, card, labels)).join("") ||
-    "<p>Показатели пока не внесены.</p>";
+  const studies = card.catalogSubgroup === "workplace"
+    ? "<ul>" + card.indicators.map(indicator => renderIndicator({ ...indicator, limit: indicator.price?.note })).join("") + "</ul>"
+    : [...groups].map(([type, rows]) => renderStudy(type, rows, card, labels)).join("") ||
+      "<p>Показатели пока не внесены.</p>";
   return '<details class="catalog-branch"><summary>' + badge + escape(card.title) +
     '</summary><div class="fallback-card"><p><strong>Условия применения</strong> ' +
     escape(card.conditions) + "</p>" + studies + "</div></details>";
@@ -76,7 +77,7 @@ export function renderFallback(categories, labels) {
   for (const [index, card] of categories.entries()) {
     const path = paths[index];
     const parentPath = branchCodes.has(path.at(-1)) ? [...path] : path.slice(0, -1);
-    if (card.catalogSubgroup !== "centralized-water" && (card.catalogSubgroup || !path.length)) {
+    if (!["centralized-water", "workplace"].includes(card.catalogSubgroup) && (card.catalogSubgroup || !path.length)) {
       parentPath.push(card.catalogSubgroup ?? "water");
     }
     let children = tree;
