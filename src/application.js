@@ -73,7 +73,15 @@ let applicationEdit;
 
 function openApplicationSample(category, sample = null) {
   applicationEdit = { category, sample };
-  applicationEditor.elements.sampleName.value = sample?.name ?? category.title;
+  const workplace = category.catalogSubgroup === "workplace";
+  applicationEditor.querySelector("#application-name-label").textContent =
+    workplace ? "Название измерения" : "Рабочее название пробы";
+  applicationEditor.querySelector('button[type="submit"]').textContent =
+    workplace ? "Сохранить измерение" : "Сохранить пробу";
+  applicationEditor.elements.quantity.placeholder =
+    workplace ? "Число точек или рабочих мест и периодичность" : "Например, 1 образец 2 раза в год";
+  applicationEditor.elements.sampleName.value = sample?.name ??
+    (workplace ? "Инструментальные измерения: " + category.title.toLocaleLowerCase("ru") : category.title);
   applicationEditor.elements.quantity.value = sample?.quantity ?? "";
   applicationEditor.querySelector("#application-category").textContent =
     [category.code, category.title].filter(Boolean).join(" · ");
@@ -86,7 +94,7 @@ function openApplicationSample(category, sample = null) {
     checkbox.type = "checkbox";
     checkbox.name = "study";
     checkbox.value = String(index);
-    checkbox.checked = sample?.indicators.includes(indicator) ?? false;
+    checkbox.checked = sample?.indicators.includes(indicator) ?? workplace;
     label.append(checkbox, document.createTextNode(indicator.name));
     const note = indicator.price?.note;
     if (note) {
@@ -155,8 +163,9 @@ function showApplicationOverview() {
     edit.type = remove.type = "button";
     edit.textContent = "Изменить";
     remove.textContent = "Удалить";
-    edit.setAttribute("aria-label", "Изменить пробу " + number);
-    remove.setAttribute("aria-label", "Удалить пробу " + number);
+    const item = sample.category.catalogSubgroup === "workplace" ? "измерение" : "пробу";
+    edit.setAttribute("aria-label", "Изменить " + item + " " + number);
+    remove.setAttribute("aria-label", "Удалить " + item + " " + number);
     edit.addEventListener("click", () => openApplicationSample(sample.category, sample));
     remove.addEventListener("click", () => {
       applicationSamples.splice(index, 1);
@@ -204,7 +213,7 @@ function setupApplication() {
     const indicators = fields.getAll("study").map(index => category.indicators[index]);
     const status = applicationEditor.querySelector("#application-editor-status");
     if (!name || !quantity || !indicators.length) {
-      status.textContent = "Укажите название и количество пробы и выберите хотя бы одно исследование.";
+      status.textContent = "Укажите название и количество и выберите хотя бы одно исследование.";
       return;
     }
     const entry = { category, name, quantity, indicators };

@@ -58,7 +58,7 @@
     <div class="workspace">
       <section class="results" aria-labelledby="result-heading">
         <div class="section-heading">
-          <h2 id="result-heading">Каталог продукции</h2>
+          <h2 id="result-heading">Каталог исследований</h2>
           <span id="result-count" class="count" aria-live="polite">@@COUNT@@</span>
         </div>
         <div id="results-list"></div>
@@ -75,7 +75,7 @@
       <form method="dialog"><button type="submit" autofocus>Закрыть</button></form>
     </div>
     <div id="application-overview">
-      <p id="application-empty">Откройте карточку продукции и нажмите «Добавить пробу в заявление».</p>
+      <p id="application-empty">Добавьте пробу или измерение из карточки каталога.</p>
       <div id="application-preview" hidden>
         <p id="application-warning" class="application-warning" hidden>Черновик. В перечне есть пункты, которые нужно уточнить.</p>
         <table class="application-table">
@@ -92,7 +92,7 @@
     <form id="application-editor" hidden>
       <p id="application-category"></p>
       <div class="application-fields">
-        <label>Рабочее название пробы<input name="sampleName" required></label>
+        <label><span id="application-name-label">Рабочее название пробы</span><input name="sampleName" required></label>
         <label>Количество<input name="quantity" placeholder="Например, 1 образец 2 раза в год" required></label>
       </div>
       <div id="application-studies"></div>
@@ -141,7 +141,7 @@
         <h3>Показатели</h3>
         <span class="count"></span>
       </div>
-      <p class="conditions">Подбор документов по отбору проб предварительный. Перед применением сверяйте документ, вид продукции и условия отбора с областью аккредитации.</p>
+      <p class="conditions sampling-note">Подбор документов по отбору проб предварительный. Перед применением сверяйте документ, вид продукции и условия отбора с областью аккредитации.</p>
       <div class="indicators"></div>
     </div>
   </template>
