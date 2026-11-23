@@ -449,6 +449,23 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
   font-size: .875rem;
 }
 
+@container (width < 480px) {
+  .study-group > summary { padding: 10px; }
+  .study-preparation { padding: 6px 10px; }
+  .indicator { padding: 6px 9px; gap: 2px 8px; }
+  .indicator .limit { grid-column: 1; }
+  .indicator .price-code {
+    grid-column: 1;
+    grid-row: 3;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+  .indicator .price-code span { display: inline; }
+  .indicator .price-heading { margin-inline-end: .45em; }
+  .indicator .copy { grid-row: 1 / span 2; }
+  .indicator.has-price .copy { grid-row: 1 / span 3; }
+}
+
 #application-dialog {
   width: min(760px, calc(100% - 24px));
   max-height: 88vh;
