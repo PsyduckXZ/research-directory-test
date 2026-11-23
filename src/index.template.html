@@ -6,7 +6,7 @@
   <meta name="description" content="Поиск категорий продукции и показателей исследований для отдела гигиены питания">
   <title>Справочник исследований — пробная версия отбора</title>
   <style>@@STYLES@@</style>
-
+@@PWAHEAD@@
 </head>
 <body>
   <header class="masthead">
@@ -17,11 +17,17 @@
         </span>
         Справочник исследований
       </div>
-      <span class="version">Рабочая библиотека</span>
+      <span class="version">@@VERSION@@</span>
+      <div class="masthead-tools">
+@@UPDATEBUTTON@@
+        <button type="button" id="open-application" class="update-button" hidden>Перечень для заявления</button>
+      </div>
+@@UPDATESTATUS@@
     </div>
   </header>
 
   <main class="wrap">
+@@PWASTATUS@@
     <section class="intro" aria-labelledby="app-title">
       <div class="kicker">РАБОЧИЕ МАТЕРИАЛЫ</div>
       <h1 id="app-title">Что исследуем?</h1>
@@ -41,7 +47,11 @@
         <button type="button" data-query="салат">салат</button>
         <button type="button" data-query="винегрет">винегрет</button>
       </div>
-      <nav class="section-picks" aria-label="Быстрый переход к разделу"><button type="button" data-section="9">Готовые блюда</button><button type="button" data-section="2">Молочная продукция</button><button type="button" data-section="all">Все разделы</button></nav>
+      <nav class="section-picks" aria-label="Быстрый переход к разделу">
+        <button type="button" data-section="9.16">Готовые блюда</button>
+        <button type="button" data-section="2">Молочная продукция</button>
+        <button type="button" data-section="1">Мясная продукция</button>
+      </nav>
     </section>
 
     <aside class="notice" id="demo-notice" hidden>
@@ -52,7 +62,7 @@
     <div class="workspace">
       <section class="results" aria-labelledby="result-heading">
         <div class="section-heading">
-          <h2 id="result-heading">Каталог продукции</h2>
+          <h2 id="result-heading">Каталог исследований</h2>
           <span id="result-count" class="count" aria-live="polite">@@COUNT@@</span>
         </div>
         <div id="results-list"></div>
@@ -62,6 +72,41 @@
       <section id="detail" class="detail" aria-label="Карточка категории" hidden></section>
     </div>
   </main>
+
+  <dialog id="application-dialog" aria-labelledby="application-title">
+    <div class="application-heading">
+      <h2 id="application-title">Перечень исследований для заявления</h2>
+      <form method="dialog"><button type="submit" autofocus>Закрыть</button></form>
+    </div>
+    <div id="application-overview">
+      <p id="application-empty">Добавьте пробу или измерение из карточки каталога.</p>
+      <div id="application-preview" hidden>
+        <p id="application-warning" class="application-warning" hidden>Черновик. В перечне есть пункты, которые нужно уточнить.</p>
+        <table class="application-table">
+          <thead><tr><th scope="col">№</th><th scope="col">Наименование</th><th scope="col">Количество</th><th scope="col"><span class="sr-only">Действия</span></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="application-actions">
+          <button type="button" id="copy-application">Скопировать перечень</button>
+          <span id="application-copy-status" role="status"></span>
+        </div>
+        <label id="application-copy-fallback" hidden>Перечень для ручного копирования<textarea rows="5" readonly></textarea></label>
+      </div>
+    </div>
+    <form id="application-editor" hidden>
+      <p id="application-category"></p>
+      <div class="application-fields">
+        <label><span id="application-name-label">Рабочее название пробы</span><input name="sampleName" required></label>
+        <label>Количество<input name="quantity" placeholder="Например, 1 образец 2 раза в год" required></label>
+      </div>
+      <div id="application-studies"></div>
+      <p id="application-editor-status" role="alert"></p>
+      <div class="application-actions">
+        <button type="submit">Сохранить пробу</button>
+        <button type="button" id="cancel-application-edit">Отмена</button>
+      </div>
+    </form>
+  </dialog>
 
   <template id="result-template">
     <button class="result" type="button">
@@ -86,6 +131,8 @@
         </dl>
       </details>
 
+      <button class="add-application-sample" type="button" hidden>Добавить пробу в заявление</button>
+
       <section class="sampling-plan" aria-labelledby="sampling-plan-title" hidden>
         <h3 id="sampling-plan-title">Отбор проб · пробная версия</h3>
         <p>Количество для передачи в лабораторию</p>
@@ -98,7 +145,7 @@
         <h3>Показатели</h3>
         <span class="count"></span>
       </div>
-      <p class="conditions">Подбор документов по отбору проб предварительный. Перед применением сверяйте документ, вид продукции и условия отбора с областью аккредитации.</p>
+      <p class="conditions sampling-note">Подбор документов по отбору проб предварительный. Перед применением сверяйте документ, вид продукции и условия отбора с областью аккредитации.</p>
       <div class="indicators"></div>
     </div>
   </template>
@@ -140,8 +187,6 @@
     </div>
   </template>
   <div id="copy-status" class="sr-only" role="status"></div>
-<script>@@CATALOG@@</script>
-<script>@@LABELS@@
-@@APP@@</script>
+@@SCRIPTS@@
 </body>
 </html>

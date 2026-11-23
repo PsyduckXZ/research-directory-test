@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Справочник исследований</title>
+</head>
+<body>
+  <p id="opening" role="status">Загружаем справочник…</p>
+  <button id="retry" type="button" hidden>Повторить загрузку</button>
+  <noscript>Для открытия справочника включите JavaScript.</noscript>
+  <script>
+(() => {
+@@WEBUPDATE@@
+async function openDirectory() {
+  const status = document.querySelector("#opening");
+  const retry = document.querySelector("#retry");
+  retry.hidden = true;
+  status.textContent = "Загружаем справочник…";
+  try {
+    const params = new URL(location.href).searchParams;
+    const manifest = params.has("test-baseline") ? new URL("baseline.json", desktopManifest) : desktopManifest;
+    showDesktopPage(await loadDesktopPage(await fetchDesktopRelease(manifest)));
+  } catch {
+    status.textContent = "Справочник не загрузился. Проверьте интернет и повторите попытку.";
+    retry.hidden = false;
+  }
+}
+document.querySelector("#retry").addEventListener("click", openDirectory);
+openDirectory();
+})();
+  </script>
+</body>
+</html>

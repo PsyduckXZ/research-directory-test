@@ -9,12 +9,12 @@ function samplingText(indicator, category) {
 
 function renderIndicator(indicator) {
   const { name, limit, price } = indicator;
-  const priceHtml = price ? '<br><span class="fallback-price" title="' + escape(price.note) +
+  const priceHtml = price && !price.grouped ? '<br><span class="fallback-price" title="' + escape([price.note, price.preparation && "Пробоподготовка " + price.preparation].filter(Boolean).join(" · ")) +
     '">Прейскурант · ' + escape(price.code) + "</span>" : "";
-  return "<li><strong>" + escape(name) + "</strong><br>" + escape(limit) + priceHtml + "</li>";
+  return "<li><strong>" + escape(name) + "</strong>" + (limit ? "<br>" + escape(limit) : "") + priceHtml + "</li>";
 }
 
-function renderStudy(type, indicators, category, studyLabels) {
+function renderStudy(type, indicators, category, { studyLabels, preparationLabels }) {
   const byReference = new Map();
   for (const indicator of indicators) {
     const basis = indicator.basis.trim();
@@ -29,31 +29,46 @@ function renderStudy(type, indicators, category, studyLabels) {
       escape(basis || "Нет данных") + "</p><p><strong>Отбор проб</strong> " +
       escape(sampling || "Нет данных") + "</p><ul>" + rows.map(renderIndicator).join("") + "</ul></div>";
   }).join("");
-  const preparation = indicators.find(indicator => indicator.price?.preparation)?.price.preparation;
-  const preparationHtml = preparation ? '<p class="study-preparation">Пробоподготовка · ' +
-    escape(preparation) + "</p>" : "";
+  const preparations = new Set(indicators.map(indicator => indicator.price?.preparation).filter(Boolean));
+  const preparationHtml = [...preparations].map(preparation => {
+    const label = preparationLabels[preparation];
+    return '<p class="study-preparation">Пробоподготовка' + (label ? " " + escape(label) : "") +
+      " · " + escape(preparation) + "</p>";
+  }).join("");
+  const priceNotes = new Set(indicators.filter(({ price }) => price?.code === "Уточнить" || price?.code === "р. 8, п. 50")
+    .map(({ price }) => price.note).filter(Boolean));
+  const priceNotesHtml = [...priceNotes].map(note => '<p class="study-preparation">' + escape(note) + "</p>").join("");
+  const groupedPrices = new Set(indicators.filter(({ price }) => price?.grouped)
+    .map(({ price }) => price.code));
+  const groupedPriceHtml = [...groupedPrices].map(code => '<p class="study-preparation">Прейскурант · ' +
+    escape(code) + " (один раз на всю группу)</p>").join("");
   return '<details class="fallback-study"><summary>' + escape(studyLabels[type]) + "</summary>" +
-    references + preparationHtml + "</details>";
+    groupedPriceHtml + references + preparationHtml + priceNotesHtml + "</details>";
 }
 
-function renderCard(card, studyLabels) {
+function renderCard(card, labels) {
   const badge = card.code ? '<span class="code">' + escape(card.code) + "</span> " : "";
   const groups = new Map();
   for (const indicator of card.indicators) {
     if (!groups.has(indicator.type)) groups.set(indicator.type, []);
     groups.get(indicator.type).push(indicator);
   }
-  const studies = [...groups].map(([type, rows]) => renderStudy(type, rows, card, studyLabels)).join("") ||
-    "<p>Показатели пока не внесены.</p>";
+  const studies = card.catalogSubgroup === "workplace"
+    ? "<ul>" + card.indicators.map(indicator => renderIndicator({ ...indicator, limit: indicator.price?.note })).join("") + "</ul>"
+    : [...groups].map(([type, rows]) => renderStudy(type, rows, card, labels)).join("") ||
+      "<p>Показатели пока не внесены.</p>";
   return '<details class="catalog-branch"><summary>' + badge + escape(card.title) +
     '</summary><div class="fallback-card"><p><strong>Условия применения</strong> ' +
     escape(card.conditions) + "</p>" + studies + "</div></details>";
 }
 
-export function renderFallback(categories, { groupTitles, studyLabels }) {
+export function renderFallback(categories, labels) {
+  const { groupTitles } = labels;
   const paths = categories.map(({ code }) => {
     const parts = code?.split(".") ?? [];
-    return parts.map((_, index) => parts.slice(0, index + 1).join("."));
+    const prefixes = parts.map((_, index) => parts.slice(0, index + 1).join("."));
+    // Раздел 9.16 показываем на верхнем уровне каталога.
+    return prefixes[1] === "9.16" ? prefixes.slice(1) : prefixes;
   });
   const branchCodes = new Set([...Object.keys(groupTitles), ...paths.flatMap(path => path.slice(0, -1))]);
   const tree = [];
@@ -62,8 +77,9 @@ export function renderFallback(categories, { groupTitles, studyLabels }) {
   for (const [index, card] of categories.entries()) {
     const path = paths[index];
     const parentPath = branchCodes.has(path.at(-1)) ? [...path] : path.slice(0, -1);
-    if (card.catalogSubgroup) parentPath.push(card.catalogSubgroup);
-    if (!path.length) parentPath.push("water");
+    if (!["centralized-water", "workplace"].includes(card.catalogSubgroup) && (card.catalogSubgroup || !path.length)) {
+      parentPath.push(card.catalogSubgroup ?? "water");
+    }
     let children = tree;
     for (const code of parentPath) {
       if (!branches.has(code)) {
@@ -77,11 +93,11 @@ export function renderFallback(categories, { groupTitles, studyLabels }) {
   }
 
   function renderNode(node) {
-    if (node.card) return renderCard(node.card, studyLabels);
-    const label = node.code === "water" ? "Упакованная питьевая и минеральная вода" :
+    if (node.card) return renderCard(node.card, labels);
+    const label = !/^\d/.test(node.code) ? escape(groupTitles[node.code]) :
       '<span class="code">' + escape(node.code.split("/")[0]) + "</span>" +
       (groupTitles[node.code] ? " " + escape(groupTitles[node.code]) : "");
-    return '<details class="catalog-branch"><summary>' + label + '</summary><div class="catalog-children">' +
+    return '<details class="catalog-branch" data-catalog-code="' + escape(node.code) + '"><summary>' + label + '</summary><div class="catalog-children">' +
       node.children.map(renderNode).join("") + "</div></details>";
   }
   return '<div class="catalog-tree">' + tree.map(renderNode).join("") + "</div>";

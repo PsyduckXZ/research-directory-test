@@ -155,7 +155,7 @@ function field(container, selector, value) {
 function renderResults() {
   const query = normalize(search.value);
   const matches = findCategories(query);
-  document.querySelector("#result-heading").textContent = query ? "Результаты поиска" : "Каталог продукции";
+  document.querySelector("#result-heading").textContent = query ? "Результаты поиска" : "Каталог исследований";
   count.textContent = matches.length;
   count.setAttribute("aria-label", (query ? "Найдено категорий: " : "Карточек в каталоге: ") + matches.length);
   clear.hidden = search.value === "";
@@ -189,7 +189,9 @@ function createCatalog(matches) {
   // A branch may have cards of its own, for example the two chemistry cards at 7.2.
   const paths = matches.map(({ category }) => {
     const parts = category.code?.split(".") ?? [];
-    return parts.map((_, index) => parts.slice(0, index + 1).join("."));
+    const prefixes = parts.map((_, index) => parts.slice(0, index + 1).join("."));
+    // Раздел 9.16 показываем на верхнем уровне каталога.
+    return prefixes[1] === "9.16" ? prefixes.slice(1) : prefixes;
   });
   const branchCodes = new Set([
     ...Object.keys(groupTitles),
@@ -200,16 +202,18 @@ function createCatalog(matches) {
   for (const [index, match] of matches.entries()) {
     const path = paths[index];
     const branches = branchCodes.has(path.at(-1)) ? path : path.slice(0, -1);
-    if (match.category.catalogSubgroup) branches.push(match.category.catalogSubgroup);
-    if (!path.length) branches.push("water");
+    if (!["centralized-water", "workplace"].includes(match.category.catalogSubgroup) && (match.category.catalogSubgroup || !path.length)) {
+      branches.push(match.category.catalogSubgroup ?? "water");
+    }
     let parent = tree;
     for (const code of branches) {
       if (!groups.has(code)) {
         const branch = document.createElement("details");
         branch.className = "catalog-branch";
+        branch.dataset.catalogCode = code;
         const label = document.createElement("summary");
-        if (code === "water") {
-          label.textContent = "Упакованная питьевая вода";
+        if (!/^\d/.test(code)) {
+          label.textContent = groupTitles[code];
         } else {
           const badge = document.createElement("span");
           badge.className = "code";
@@ -285,13 +289,15 @@ function compactSampling(value) {
 
 async function copyIndicator(indicator, category, article) {
   const sampling = samplingForIndicator(indicator, category);
+  const workplace = category.catalogSubgroup === "workplace";
   const parts = [
     category.demo ? "ДЕМОНСТРАЦИОННЫЕ ДАННЫЕ" : "",
     [category.code, category.title].filter(Boolean).join(" — "),
     (indicator.type?.trim() || missing) + " · " + (indicator.name?.trim() || missing),
-    "Норматив: " + (indicator.limit?.trim() || missing),
-    "Основание: " + (indicator.basis?.trim() || missing),
-    indicator.price ? "Прейскурант: " + indicator.price.code : "",
+    workplace ? indicator.price?.note : "Норматив: " + (indicator.limit?.trim() || missing),
+    workplace ? "" : "Основание: " + (indicator.basis?.trim() || missing),
+    indicator.price ? "Прейскурант: " + indicator.price.code +
+      (indicator.price.grouped ? " (один раз на всю группу)" : "") : "",
     sampling ? "Отбор проб: " + sampling : ""
   ];
   const value = parts.filter(Boolean).join("\n");
@@ -370,7 +376,7 @@ function groupReferences(group, selector, label, indicators, getReference, forma
 }
 
 function renderPrice(article, indicator) {
-  if (!indicator.price) return;
+  if (!indicator.price || indicator.price.grouped) return;
   article.classList.add('has-price');
   const cell = article.querySelector('.price-code');
   cell.hidden = false;
@@ -381,25 +387,51 @@ function renderPrice(article, indicator) {
   code.textContent = indicator.price.code;
   code.title = [indicator.price.source, indicator.price.note].filter(Boolean).join(' · ');
   cell.append(heading, code);
+  if (indicator.price.preparation) code.title += " · Пробоподготовка " + indicator.price.preparation;
 
 }
 
 function createStudyGroup(type, indicators, category) {
   const group = cloneTemplate("#study-group-template");
-  group.open = indicators.some(indicator => selectedIndicators.has(indicator));
+  const workplace = category.catalogSubgroup === "workplace";
+  group.open = workplace || indicators.some(indicator => selectedIndicators.has(indicator));
   field(group, ".study-label", studyLabels[type] ?? type);
   group.querySelector(".count").textContent = indicators.length;
-  groupReferences(group, ".study-basis", "Основания", indicators,
-    indicator => indicator.basis, compactBasis, "Не указано");
-  groupReferences(group, ".study-sampling", "Отбор проб", indicators,
-    indicator => samplingForIndicator(indicator, category), compactSampling, "Не указан");
+  if (workplace) {
+    for (const reference of group.querySelectorAll(".study-reference")) reference.hidden = true;
+  } else {
+    groupReferences(group, ".study-basis", "Основания", indicators,
+      indicator => indicator.basis, compactBasis, "Не указано");
+    groupReferences(group, ".study-sampling", "Отбор проб", indicators,
+      indicator => samplingForIndicator(indicator, category), compactSampling, "Не указан");
+  }
 
-  const preparation = indicators.find(indicator => indicator.price?.preparation)?.price.preparation;
-  if (preparation) {
+  const mappings = group.querySelector(".study-mappings");
+  const groupedPrices = new Set(indicators.filter(({ price }) => price?.grouped)
+    .map(({ price }) => price.code));
+  for (const code of groupedPrices) {
     const note = document.createElement("p");
     note.className = "study-preparation";
-    note.textContent = "Пробоподготовка · " + preparation;
-    group.querySelector(".study-mappings").prepend(note);
+    note.textContent = "Прейскурант · " + code + " (один раз на всю группу)";
+    mappings.append(note);
+  }
+
+  const preparations = new Set(indicators.map(indicator => indicator.price?.preparation).filter(Boolean));
+  for (const preparation of preparations) {
+    const note = document.createElement("p");
+    note.className = "study-preparation";
+    const label = preparationLabels[preparation];
+    note.textContent = "Пробоподготовка" + (label ? " " + label : "") + " · " + preparation;
+    mappings.append(note);
+  }
+
+  const priceNotes = new Set(indicators.filter(({ price }) => price?.code === "Уточнить" || price?.code === "р. 8, п. 50")
+    .map(({ price }) => price.note).filter(Boolean));
+  for (const text of priceNotes) {
+    const note = document.createElement("p");
+    note.className = "study-preparation";
+    note.textContent = text;
+    mappings.append(note);
   }
 
   const rows = group.querySelector(".study-rows");
@@ -407,8 +439,17 @@ function createStudyGroup(type, indicators, category) {
     const article = cloneTemplate("#indicator-template");
     article.classList.toggle("matched-indicator", selectedIndicators.has(indicator));
     field(article, "h4", indicator.name);
-    field(article, ".limit", indicator.limit);
+    const limit = workplace ? indicator.price?.note : indicator.limit;
+    field(article, ".limit", limit);
+    article.querySelector(".limit").hidden = workplace && !limit;
     renderPrice(article, indicator);
+    const quantity = indicatorSamplingQuantity(indicator);
+    if (quantity) {
+      const note = document.createElement("p");
+      note.className = "indicator-sampling-mass";
+      note.textContent = "Масса для лаборатории: " + quantity;
+      article.append(note);
+    }
     article.querySelector(".copy").addEventListener("click", () => copyIndicator(indicator, category, article));
     rows.append(article);
   }
@@ -418,6 +459,42 @@ function createStudyGroup(type, indicators, category) {
 
 const samplingSelections = new WeakMap();
 const samplingMassUnknown = "Массу или объём уточнить в лаборатории.";
+
+const laboratoryMassBasis = "Рабочая масса для передачи в лабораторию по практике приёма проб в лаборатории.";
+const chemistryIndicatorGrams = 200;
+const sensorySampleGrams = 300;
+const glazeSample = ["3,0 кг", "или 3 целые рыбы с головой"];
+
+function chemistryMeasurements(indicator) {
+  const name = normalize(indicator.name);
+  if (name.startsWith("левомицетин")) return ["chloramphenicol"];
+  if (/^(?:антибиотики тетрациклиновой группы|тетрациклиновая группа)/.test(name)) return ["tetracyclines"];
+  if (name.startsWith("бензойная кислота")) return ["benzoic"];
+  if (name.startsWith("сорбиновая кислота")) return ["sorbic"];
+  if (name.startsWith("сумма бензойной и сорбиновой кислот")) return ["benzoic", "sorbic"];
+  return [];
+}
+
+function isGlazeIndicator(indicator) {
+  return indicator.type === "Физико-химическое" && normalize(indicator.name) === "массовая доля глазури";
+}
+
+function indicatorSamplingQuantity(indicator) {
+  if (isGlazeIndicator(indicator)) return glazeSample.join(" ");
+  if (indicator.type !== "Санитарно-химическое") return "";
+  const measurements = chemistryMeasurements(indicator);
+  if (measurements.length === 2) return "расчёт по двум кислотам, без дополнительной массы";
+  return measurements.length ? chemistryIndicatorGrams + " г" : "";
+}
+
+function selectedChemistryQuantity(indicators, code) {
+  const measurements = indicators.map(chemistryMeasurements);
+  const count = new Set(measurements.flat()).size;
+  if (!count) return samplingQuantity(code, "chemistry");
+  const total = count * chemistryIndicatorGrams + " г";
+  return measurements.some(items => !items.length) ? [total + " на показатели с заданной массой", "На остальные — уточнить"] : [total];
+}
+
 
 const category9ChemistryMass = new Map([
   ...["1.1", "1.2.2", "2.1", "2.2.2", "3", "4.1", "4.2.2"].map(code => [code, "2 порции, суммарно не менее 200 г"]),
@@ -513,7 +590,8 @@ function samplingReferences(indicators, category, showNames) {
 function renderSamplingPlan(card, groups, category) {
   const microbiology = groups.get("Микробиологическое") ?? [];
   const chemistry = groups.get("Санитарно-химическое") ?? [];
-  if (!microbiology.length && !chemistry.length) return;
+  const sensory = groups.get("Органолептическое") ?? [];
+  const glaze = (groups.get("Физико-химическое") ?? []).filter(isGlazeIndicator);
 
   const plan = card.querySelector(".sampling-plan");
   const rows = plan.querySelector(".sampling-plan-rows");
@@ -532,6 +610,23 @@ function renderSamplingPlan(card, groups, category) {
     row.append(title, amount);
     rows.append(row);
   }
+
+  function appendFixedQuantity(name, quantity, indicators) {
+    const row = document.createElement("tr");
+    const title = document.createElement("th");
+    const amount = document.createElement("td");
+    title.scope = "row";
+    title.textContent = name;
+    amount.className = "sampling-amount";
+    showSamplingQuantity(amount, quantity);
+    title.append(samplingDetails(laboratoryMassBasis, samplingReferences(indicators, category, false)));
+    row.append(title, amount);
+    rows.append(row);
+  }
+
+  if (glaze.length) appendFixedQuantity("Массовая доля глазури", glazeSample, glaze);
+  appendFixedQuantity(sensory.length ? "Органолептика" : "Органолептика (при назначении)",
+    [sensorySampleGrams + " г на все органолептические показатели"], sensory);
 
   if (!chemistry.length) return;
 
@@ -555,12 +650,21 @@ function renderSamplingPlan(card, groups, category) {
     const selected = chemistry.filter(indicator => chosen.has(indicator));
     count.textContent = "Выбрано " + selected.length + " из " + chemistry.length;
     toggle.textContent = selected.length ? "Изменить выбор" : "Выбрать показатели";
-    showSamplingQuantity(amount, selected.length ? samplingQuantity(category.code, "chemistry") : ["—"]);
+    showSamplingQuantity(amount, selected.length ? selectedChemistryQuantity(selected, category.code) : ["—"]);
     references.replaceChildren();
-    if (selected.length) references.append(samplingDetails(
-      category9SamplingAmount(category.code, "chemistry") || samplingMassUnknown,
-      samplingReferences(selected, category, true)));
+    if (!selected.length) return;
 
+    const notes = [];
+    if (selected.some(indicator => chemistryMeasurements(indicator).length)) {
+      notes.push(laboratoryMassBasis + " По 200 г на каждое определение.");
+      if (selected.some(indicator => chemistryMeasurements(indicator).length === 2)) {
+        notes.push("Сумма кислот рассчитывается по результатам двух определений без дополнительной массы.");
+      }
+    }
+    if (selected.some(indicator => !chemistryMeasurements(indicator).length)) {
+      notes.push(category9SamplingAmount(category.code, "chemistry") || samplingMassUnknown);
+    }
+    references.append(samplingDetails(notes.join(" "), samplingReferences(selected, category, true)));
   }
 
   for (const indicator of chemistry) {
@@ -598,6 +702,7 @@ function renderDetail() {
   }
 
   const category = selected;
+  const workplace = category.catalogSubgroup === "workplace";
   const card = cloneTemplate("#detail-template");
   card.querySelector(".detail-meta").hidden = !category.code && !category.demo;
   card.querySelector(".code").hidden = !category.code;
@@ -625,7 +730,16 @@ function renderDetail() {
     group.push(indicator);
     groups.set(type, group);
   }
-  renderSamplingPlan(card, groups, category);
+  const addSample = card.querySelector(".add-application-sample");
+  addSample.hidden = !indicators.length || category.demo;
+  addSample.addEventListener("click", () => openApplicationSample(category));
+  if (workplace) {
+    addSample.textContent = "Добавить измерения в заявление";
+    card.querySelector(".sampling-note").hidden = true;
+    card.querySelector(".detail-notes").open = true;
+  } else {
+    renderSamplingPlan(card, groups, category);
+  }
   for (const [type, group] of groups) list.append(createStudyGroup(type, group, category));
   card.querySelector(".back").addEventListener("click", () => {
     const row = selectedRow;
@@ -670,13 +784,12 @@ if (Array.isArray(categories)) {
       const code = shortcut.dataset.section;
       for (const branch of catalogTree.children) {
         if (branch.tagName !== "DETAILS") continue;
-        const badge = branch.querySelector(":scope > summary .code");
-        branch.open = code !== "all" && badge?.textContent.trim() === code;
+        branch.open = branch.dataset.catalogCode === code;
         if (branch.open) branch.scrollIntoView({block: "start"});
       }
-      if (code === "all") document.querySelector("#result-heading").scrollIntoView({block: "start"});
     });
   }
+  setupApplication();
   updateQuery();
   document.querySelector("#catalog-fallback").remove();
   document.querySelector(".search-panel").hidden = false;

@@ -1,0 +1,72 @@
+name: Publish research directory
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'pages/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Keep existing release URLs
+        uses: actions/checkout@v6
+        with:
+          ref: 04ac48b8c1b7fa6817cee39a13c4294b5e08d5e8
+          path: previous-pages
+          persist-credentials: false
+          sparse-checkout: |
+            docs/desktop
+            docs/windows
+            docs/version.json
+          sparse-checkout-cone-mode: false
+      - name: Build and check site
+        run: |
+          version="0.$((1 + GITHUB_RUN_NUMBER / 1000)).$((GITHUB_RUN_NUMBER % 1000))"
+          mkdir -p dist/site/{desktop,windows}
+          cp pages/index.html dist/site/index.html
+          cp previous-pages/docs/version.json dist/site/
+          cp previous-pages/docs/desktop/baseline.json previous-pages/docs/desktop/*.html.gz dist/site/desktop/
+          cp previous-pages/docs/windows/research-directory-*.html dist/site/windows/
+          node scripts/build.mjs --check
+          node scripts/build.mjs --web --release="$version" dist/site/desktop/index.html
+          node scripts/build.mjs --pwa --release="$version" dist/site/pwa/index.html
+          node scripts/build.mjs --release="$version" dist/site/windows/index.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/site
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
